@@ -1,0 +1,8 @@
+Chipa
+
+- Option to use Visa and Mastercard
+- Create several cards
+- Allocate funds to whichever cards
+- Create card options: NGN | USA | EUR | GBP | Duram | Kuwait | UAE | AUS
+- Allow users to Freeze and Unfreeze cards
+- Leads Bank and Clear Junction
