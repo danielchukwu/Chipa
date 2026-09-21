@@ -68,10 +68,3 @@ func (s *ReferralsService) GetUserReferralByUserAndElectionGroup(ctx context.Con
 func (s *ReferralsService) ListReferredUsersWithDetails(ctx context.Context, params queries.ListReferredUsersWithDetailsParams) ([]queries.ListReferredUsersWithDetailsRow, error) {
 	return s.q.ListReferredUsersWithDetails(ctx, params)
 }
-
-func (s *ReferralsService) GetActiveMarketingCampaignForElectionGroup(ctx context.Context, partyID int32, electionGroupID int32) (queries.PartyMarketingCampaign, error) {
-	return s.q.GetActiveMarketingCampaignForElectionGroup(ctx, queries.GetActiveMarketingCampaignForElectionGroupParams{
-		PartyID:         partyID,
-		ElectionGroupID: electionGroupID,
-	})
-}

@@ -1265,7 +1265,7 @@ type UnmatchedPollingUnitResult struct {
 
 type User struct {
 	ID              int64              `json:"id"`
-	FakeID          pgtype.Int8        `json:"fake_id"`
+	PublicID        string             `json:"public_id"`
 	Email           pgtype.Text        `json:"email"`
 	Phone           pgtype.Text        `json:"phone"`
 	Username        pgtype.Text        `json:"username"`

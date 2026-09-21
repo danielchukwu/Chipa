@@ -79,45 +79,43 @@
     <div id="topbar">
       <div id="nav">
         <select id="files">
-          <option value="file0">free9ja/api/cmd/api/main.go (42.1%)</option>
+          <option value="file0">chipa/api/cmd/api/main.go (42.1%)</option>
 
           <option value="file1">
-            free9ja/api/internal/config/config.go (88.2%)
+            chipa/api/internal/config/config.go (88.2%)
           </option>
 
           <option value="file2">
-            free9ja/api/internal/db/postgres.go (86.7%)
+            chipa/api/internal/db/postgres.go (86.7%)
           </option>
 
-          <option value="file3">
-            free9ja/api/internal/db/redis.go (100.0%)
-          </option>
+          <option value="file3">chipa/api/internal/db/redis.go (100.0%)</option>
 
           <option value="file4">
-            free9ja/api/internal/handler/auth/auth_handler.go (100.0%)
+            chipa/api/internal/handler/auth/auth_handler.go (100.0%)
           </option>
 
           <option value="file5">
-            free9ja/api/internal/handler/handler.go (100.0%)
+            chipa/api/internal/handler/handler.go (100.0%)
           </option>
 
           <option value="file6">
-            free9ja/api/internal/logger/logger.go (100.0%)
+            chipa/api/internal/logger/logger.go (100.0%)
           </option>
 
           <option value="file7">
-            free9ja/api/internal/router/router.go (100.0%)
+            chipa/api/internal/router/router.go (100.0%)
           </option>
 
           <option value="file8">
-            free9ja/api/internal/service/auth/auth_service.go (94.8%)
+            chipa/api/internal/service/auth/auth_service.go (94.8%)
           </option>
 
           <option value="file9">
-            free9ja/api/internal/utils/utils.go (90.9%)
+            chipa/api/internal/utils/utils.go (90.9%)
           </option>
 
-          <option value="file10">free9ja/api/test/helper.go (90.2%)</option>
+          <option value="file10">chipa/api/test/helper.go (90.2%)</option>
         </select>
       </div>
       <div id="legend">
@@ -140,18 +138,18 @@ import (
         "syscall"
         "time"
 
-        "free9ja/api/internal/config"
-        "free9ja/api/internal/db"
-        "free9ja/api/internal/logger"
-        "free9ja/api/internal/router"
+        "chipa/api/internal/config"
+        "chipa/api/internal/db"
+        "chipa/api/internal/logger"
+        "chipa/api/internal/router"
 
         "github.com/jackc/pgx/v5/pgxpool"
         "github.com/redis/go-redis/v9"
 )
 
-// @title Free9ja API
+// @title Chipa API
 // @version 1.0
-// @description API for the Free9ja platform.
+// @description API for the Chipa platform.
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
@@ -289,7 +287,7 @@ import (
         "strconv"
         "sync"
 
-        "free9ja/api/internal/utils"
+        "chipa/api/internal/utils"
 
         "github.com/joho/godotenv"
 )
@@ -436,8 +434,8 @@ func GetIntEnv(key string, defaultValue int) int <span class="cov8" title="1">{
 }
 
 func GetEnvPath() (envPath string, envLocalPath string) <span class="cov8" title="1">{
-        envPath = "D:/Sz-projects/50-main-projects/3-free9ja/apps/api/.env"
-        envLocalPath = "D:/Sz-projects/50-main-projects/3-free9ja/apps/api/.env.local"
+        envPath = "D:/Sz-projects/50-main-projects/3-chipa/apps/api/.env"
+        envLocalPath = "D:/Sz-projects/50-main-projects/3-chipa/apps/api/.env.local"
 
         // if the user sets a .env custom path, then return the custom path
         if GetEnv("ENV_PATH", "") != "" </span><span class="cov8" title="1">{
@@ -458,7 +456,7 @@ func GetEnvPath() (envPath string, envLocalPath string) <span class="cov8" title
 import (
         "context"
         "fmt"
-        "free9ja/api/internal/config"
+        "chipa/api/internal/config"
         "log/slog"
         "time"
 
@@ -502,7 +500,7 @@ func NewPostgresPool(ctx context.Context, connString string) (*pgxpool.Pool, err
 import (
         "context"
         "fmt"
-        "free9ja/api/internal/config"
+        "chipa/api/internal/config"
         "log/slog"
 
         "github.com/redis/go-redis/v9"
@@ -536,9 +534,9 @@ func NewRedisClient(cfg config.RedisConfig) (*redis.Client, error) <span class="
 import (
         "context"
         "encoding/json"
-        "free9ja/api/internal/db/queries"
-        auth "free9ja/api/internal/service/auth"
-        "free9ja/api/internal/utils"
+        "chipa/api/internal/db/queries"
+        auth "chipa/api/internal/service/auth"
+        "chipa/api/internal/utils"
         "net/http"
         "time"
 
@@ -646,7 +644,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) <span class="
 import (
         "net/http"
 
-        "free9ja/api/internal/utils"
+        "chipa/api/internal/utils"
 )
 
 var utilsInstance = utils.NewUtils(nil)
@@ -671,7 +669,7 @@ func Health(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1"
 // @Router / [get]
 func Root(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
         utilsInstance.RespondJSON(w, http.StatusOK, map[string]string{
-                "message": "free9ja API v1",
+                "message": "chipa API v1",
         })
 }</span>
 </pre>
@@ -747,12 +745,12 @@ import (
         "github.com/redis/go-redis/v9"
         httpSwagger "github.com/swaggo/http-swagger"
 
-        _ "free9ja/api/docs"
-        "free9ja/api/internal/db/queries"
-        "free9ja/api/internal/handler"
-        authhandler "free9ja/api/internal/handler/auth"
-        authservice "free9ja/api/internal/service/auth"
-        "free9ja/api/internal/utils"
+        _ "chipa/api/docs"
+        "chipa/api/internal/db/queries"
+        "chipa/api/internal/handler"
+        authhandler "chipa/api/internal/handler/auth"
+        authservice "chipa/api/internal/service/auth"
+        "chipa/api/internal/utils"
 )
 
 // New creates and returns a configured Chi router.
@@ -795,14 +793,14 @@ import (
         "context"
         "errors"
         "fmt"
-        "free9ja/api/internal/db/queries"
+        "chipa/api/internal/db/queries"
         "math/rand"
         "regexp"
         "strconv"
         "strings"
         "time"
 
-        "free9ja/api/internal/db"
+        "chipa/api/internal/db"
 
         "github.com/jackc/pgx/v5/pgtype"
         phonenumbers "github.com/nyaruka/phonenumbers"
@@ -1232,10 +1230,10 @@ import (
         "database/sql"
         "encoding/json"
         "fmt"
-        "free9ja/api/internal/config"
-        "free9ja/api/internal/db"
-        "free9ja/api/internal/router"
-        "free9ja/api/internal/utils"
+        "chipa/api/internal/config"
+        "chipa/api/internal/db"
+        "chipa/api/internal/router"
+        "chipa/api/internal/utils"
         "io"
         "net"
         "net/http"

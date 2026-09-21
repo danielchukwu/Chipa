@@ -209,14 +209,6 @@ func (h *Handler) GetReferralStats(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	partyIDStr := r.URL.Query().Get("party_id")
-	var partyID int32
-	if partyIDStr != "" {
-		if id, err := strconv.ParseInt(partyIDStr, 10, 32); err == nil {
-			partyID = int32(id)
-		}
-	}
-
 	// Fetch user referral record
 	userReferral, err := h.referralsService.GetUserReferralByUserAndElectionGroup(r.Context(), userID, egID)
 	var userReferralData map[string]interface{}
@@ -242,18 +234,8 @@ func (h *Handler) GetReferralStats(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Fetch active marketing campaign if party_id & egID are available
-	var activeCampaignData interface{}
-	if partyID > 0 && egID > 0 {
-		campaign, campErr := h.referralsService.GetActiveMarketingCampaignForElectionGroup(r.Context(), partyID, egID)
-		if campErr == nil {
-			activeCampaignData = campaign
-		}
-	}
-
 	h.utils.RespondSuccess(w, http.StatusOK, "Referral stats fetched successfully", map[string]interface{}{
-		"user_referral":   userReferralData,
-		"active_campaign": activeCampaignData,
+		"user_referral": userReferralData,
 	})
 }
 

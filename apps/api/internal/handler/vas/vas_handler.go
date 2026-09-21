@@ -24,6 +24,13 @@ func NewHandler(vasSvc *fintechservice.VASService, pinSvc *fintechservice.PINSer
 	}
 }
 
+// GetCategories godoc
+// @Summary Get VAS bill categories
+// @Description Returns supported bill categories (airtime, data, electricity, cable_tv)
+// @Tags VAS
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router /bills/categories [get]
 func (h *Handler) GetCategories(w http.ResponseWriter, r *http.Request) {
 	categories := h.vasSvc.GetCategories(r.Context())
 	h.utils.RespondSuccess(w, http.StatusOK, "Categories retrieved", map[string]interface{}{
@@ -31,6 +38,15 @@ func (h *Handler) GetCategories(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetOperators godoc
+// @Summary Get VAS operators
+// @Description Returns billers/operators for a given category (e.g. MTN, Airtel, IKEDC, DSTV)
+// @Tags VAS
+// @Produce json
+// @Param category query string true "VAS Category (airtime, data, electricity, cable_tv)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /bills/operators [get]
 func (h *Handler) GetOperators(w http.ResponseWriter, r *http.Request) {
 	category := r.URL.Query().Get("category")
 	operators, err := h.vasSvc.GetOperators(r.Context(), domain.VASCategory(category))
@@ -50,6 +66,17 @@ type ValidateRequest struct {
 	Recipient string             `json:"recipient"`
 }
 
+// ValidateRecipient godoc
+// @Summary Validate meter or smartcard number
+// @Description Validates recipient details (e.g. electricity meter or cable TV smartcard) before payment
+// @Tags VAS
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body ValidateRequest true "Validation payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /bills/validate [post]
 func (h *Handler) ValidateRecipient(w http.ResponseWriter, r *http.Request) {
 	var req ValidateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -76,6 +103,18 @@ type PayBillRequest struct {
 	PIN       string             `json:"pin"`
 }
 
+// PayBill godoc
+// @Summary Pay bill or purchase airtime/data
+// @Description Purchases airtime/data or pays electricity/TV bill with transaction PIN verification
+// @Tags VAS
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body PayBillRequest true "Bill payment payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /bills/pay [post]
 func (h *Handler) PayBill(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
 	if !ok {

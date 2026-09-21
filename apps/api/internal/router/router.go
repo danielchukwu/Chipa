@@ -15,20 +15,21 @@ import (
 	"github.com/redis/go-redis/v9"
 	httpSwagger "github.com/swaggo/http-swagger"
 
+	_ "chipa/api/docs"
 	"chipa/api/internal/config"
 	"chipa/api/internal/db/queries"
 	"chipa/api/internal/handler"
 	"chipa/api/internal/logger"
 	apimiddleware "chipa/api/internal/middleware"
-	accountprovider "chipa/api/internal/provider/account"
+	bridgeprovider "chipa/api/internal/provider/bridge"
 	cardprovider "chipa/api/internal/provider/card"
+	paystackprovider "chipa/api/internal/provider/paystack"
 	vasprovider "chipa/api/internal/provider/vas"
 	"chipa/api/internal/service/audit"
 	authservice "chipa/api/internal/service/auth"
 	filesservice "chipa/api/internal/service/files"
 	fintechservice "chipa/api/internal/service/fintech"
 	messagingservice "chipa/api/internal/service/messaging"
-	monnifyservice "chipa/api/internal/service/monnify"
 	permissionsservice "chipa/api/internal/service/permissions"
 	r2service "chipa/api/internal/service/r2"
 	referralsservice "chipa/api/internal/service/referrals"
@@ -41,6 +42,7 @@ import (
 	cardshandler "chipa/api/internal/handler/cards"
 	fileshandler "chipa/api/internal/handler/files"
 	fxhandler "chipa/api/internal/handler/fx"
+	kychandler "chipa/api/internal/handler/kyc"
 	pinhandler "chipa/api/internal/handler/pin"
 	referralshandler "chipa/api/internal/handler/referrals"
 	stateshandler "chipa/api/internal/handler/states"
@@ -70,39 +72,38 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 		refreshExp = cfg.JWTRefreshExpiration
 	}
 
-	// Monnify client (NGN virtual accounts & webhooks)
-	var monnifyClient *monnifyservice.Client
-	if cfg != nil && cfg.Monnify.APIKey != "" && cfg.Monnify.SecretKey != "" {
-		monnifyClient = monnifyservice.New(monnifyservice.Config{
-			BaseURL:      cfg.Monnify.BaseURL,
-			APIKey:       cfg.Monnify.APIKey,
-			SecretKey:    cfg.Monnify.SecretKey,
-			ContractCode: cfg.Monnify.ContractCode,
-		})
-	} else {
-		slog.Warn("Monnify not configured — running with simulated NGN accounts")
+	var bridgeAPIKey, bridgeBaseURL string
+	var paystackSecretKey, paystackPublicKey, paystackBaseURL string
+	if cfg != nil {
+		bridgeAPIKey = cfg.Bridge.APIKey
+		bridgeBaseURL = cfg.Bridge.BaseURL
+		paystackSecretKey = cfg.Paystack.SecretKey
+		paystackPublicKey = cfg.Paystack.PublicKey
+		paystackBaseURL = cfg.Paystack.BaseURL
 	}
 
-	// Providers for multi-currency accounts, cards, and VAS
-	leadBankClient := accountprovider.NewLeadBankClient("lead_api_key", "lead_secret", "https://api.leadbank.com")
-	clearJunctionClient := accountprovider.NewClearJunctionClient("cj_uuid", "cj_secret", "https://api.clearjunction.com")
+	// BaaS & Payment Rails (Bridge.xyz for USD/EUR/GBP/USDC, Paystack for NGN)
+	bridgeClient := bridgeprovider.NewBridgeClient(bridgeAPIKey, bridgeBaseURL)
+	paystackClient := paystackprovider.NewPaystackClient(paystackSecretKey, paystackPublicKey, paystackBaseURL)
 	sandboxCardProvider := cardprovider.NewSandboxCardProvider()
 	sandboxVASProvider := vasprovider.NewSandboxVASProvider()
 
 	// Core Fintech Services
-	walletSvc := fintechservice.NewWalletService(leadBankClient, clearJunctionClient)
-	cardSvc := fintechservice.NewCardService(sandboxCardProvider, walletSvc)
+	ledgerSvc := fintechservice.NewLedgerService(pool)
+	walletSvc := fintechservice.NewWalletService(pool, bridgeClient, paystackClient, ledgerSvc)
+	cardSvc := fintechservice.NewCardService(pool, sandboxCardProvider, walletSvc, ledgerSvc)
 	fxSvc := fintechservice.NewFXService(walletSvc)
 	vasSvc := fintechservice.NewVASService(sandboxVASProvider, walletSvc)
-	pinSvc := fintechservice.NewPINService()
+	pinSvc := fintechservice.NewPINService(pool)
+	kycSvc := fintechservice.NewKYCService(pool, paystackClient)
 
 	utilsInstance := utils.NewUtils(pool)
 	auditService := audit.NewAuditService(q)
 	statesService := statesservice.NewStatesService(q, rdb)
 	permissionsService := permissionsservice.NewPermissionsService()
 	referralsService := referralsservice.NewReferralsService(q)
-	usersService := usersservice.NewUsersService(q, rdb, monnifyClient)
-	authService := authservice.NewAuthService(q, rdb, messagingService, usersService, jwtSecret, accessExp, refreshExp)
+	usersService := usersservice.NewUsersService(q, rdb, paystackClient)
+	authService := authservice.NewAuthService(pool, q, rdb, messagingService, usersService, jwtSecret, accessExp, refreshExp)
 	filesService := filesservice.NewFilesService(q)
 
 	// Initialize R2 service
@@ -131,11 +132,11 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	referralsH := referralshandler.NewHandler(referralsService, utilsInstance)
 	statesH := stateshandler.NewHandler(statesService, utilsInstance)
 	systemSettingsH := systemsettingshandler.NewHandler(q, utilsInstance)
-	webhooksH := webhookshandler.NewHandler(nil, usersService, monnifyClient, utilsInstance)
+	webhooksH := webhookshandler.NewHandler(walletSvc, paystackClient, utilsInstance)
 
 	var filesH *fileshandler.Handler
 	if r2Svc != nil {
-		filesH = fileshandler.NewHandler(q, r2Svc, rdb, utilsInstance, usersService, nil, auditService)
+		filesH = fileshandler.NewHandler(q, r2Svc, rdb, utilsInstance, usersService, auditService)
 	}
 
 	walletsH := walletshandler.NewHandler(walletSvc, utilsInstance)
@@ -143,6 +144,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	fxH := fxhandler.NewHandler(fxSvc, pinSvc, utilsInstance)
 	vasH := vashandler.NewHandler(vasSvc, pinSvc, utilsInstance)
 	pinH := pinhandler.NewHandler(pinSvc, utilsInstance)
+	kycH := kychandler.NewHandler(kycSvc, utilsInstance)
 
 	// Middlewares
 	mainRouter.Use(corsMiddleware)
@@ -172,13 +174,14 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	mainRouter.Post(utils.ApiUrls.Auth.CheckNin, authH.CheckNin)
 	mainRouter.Post(utils.ApiUrls.Auth.CheckUsername, authH.CheckUsername)
 	mainRouter.Post(utils.ApiUrls.Auth.CheckReferralCode, authH.CheckReferralCode)
-	mainRouter.Post(utils.ApiUrls.Auth.Login, authH.Login)
+	mainRouter.Post(utils.ApiUrls.Auth.Login, authH.LoginCredentials)
+	mainRouter.Post("/api/v1/auth/login/pin", authH.LoginPin)
 	mainRouter.Post(utils.ApiUrls.Auth.Logout, authH.Logout)
 	mainRouter.Post(utils.ApiUrls.Auth.Refresh, authH.Refresh)
 	mainRouter.Post(utils.ApiUrls.Auth.ChangePasswordByEmail, authH.ChangePasswordByEmail)
 
-	// Monnify Webhook
-	mainRouter.Post("/api/v1/webhooks/monnify", webhooksH.HandleMonnify)
+	// Paystack Webhook
+	mainRouter.Post("/api/v1/webhooks/paystack", webhooksH.HandlePaystack)
 
 	// Banks & States
 	mainRouter.Get("/api/v1/banks", usersH.GetBanks)
@@ -198,17 +201,23 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	// Users & Security
 	mainRouter.With(authMiddleware).Get("/api/v1/users/me", usersH.GetMe)
 	mainRouter.With(authMiddleware).Patch("/api/v1/users/me", usersH.UpdateProfile)
-	mainRouter.With(authMiddleware).Post("/api/v1/users/me/onboarding", authH.CompleteOnboarding)
-	mainRouter.With(authMiddleware).Get("/api/v1/users/me/preferences", usersH.GetUserPreferences)
-	mainRouter.With(authMiddleware).Put("/api/v1/users/me/preferences", usersH.UpdateUserPreferences)
+	mainRouter.With(authMiddleware).Patch("/api/v1/users/me/onboarding", authH.SaveOnboardingProfile)
+	mainRouter.With(authMiddleware).Post("/api/v1/users/phone/otp", authH.SendPhoneOTP)
+	mainRouter.With(authMiddleware).Post("/api/v1/users/phone/verify", authH.VerifyPhoneOTP)
 	mainRouter.With(authMiddleware).Post("/api/v1/users/pin/set", pinH.SetPIN)
 	mainRouter.With(authMiddleware).Post("/api/v1/users/pin/verify", pinH.VerifyPIN)
 
-	// Multi-Currency Wallets (NGN, USD, GBP, EUR)
+	// Multi-Currency Wallets (NGN, USD, GBP, EUR) & Double-Entry Ledger
 	mainRouter.With(authMiddleware).Get("/api/v1/wallets", walletsH.GetWallets)
 	mainRouter.With(authMiddleware).Get("/api/v1/wallets/{currency}", walletsH.GetWalletByCurrency)
-	mainRouter.With(authMiddleware).Get("/api/v1/wallets/me/ngn-legacy", usersH.GetMyWallet)
-	mainRouter.With(authMiddleware).Get("/api/v1/wallets/me/transactions", usersH.ListMyWalletTransactions)
+	mainRouter.With(authMiddleware).Get("/api/v1/wallets/ledger/transactions", walletsH.GetLedgerTransactions)
+
+	// Progressive KYC Compliance Tiers (0-3) & AML Screening
+	mainRouter.With(authMiddleware).Get("/api/v1/kyc/status", kycH.GetKYCStatus)
+	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier1", kycH.SubmitTier1)
+	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier2", kycH.SubmitTier2)
+	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier3", kycH.SubmitTier3)
+	mainRouter.With(authMiddleware).Post("/api/v1/kyc/compliance-screening", kycH.UpdateComplianceScreening)
 
 	// Virtual & Physical Cards (Visa & Mastercard)
 	mainRouter.With(authMiddleware).Get("/api/v1/cards", cardsH.ListCards)

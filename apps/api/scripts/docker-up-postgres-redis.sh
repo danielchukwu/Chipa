@@ -17,36 +17,36 @@ if [ -z "$is_file" ]; then
 fi
 
 # Check if postgres is running, if not start it
-if [ "$(docker ps -q -f name=postgres_free9ja)" = "" ]; then
+if [ "$(docker ps -q -f name=postgres_chipa)" = "" ]; then
 
   # check if there is already a postgres container
-  if [ ! "$(docker ps -aq -f name=postgres_free9ja)" = "" ]; then
-    docker-compose -f $is_file start postgres_free9ja
+  if [ ! "$(docker ps -aq -f name=postgres_chipa)" = "" ]; then
+    docker-compose -f $is_file start postgres_chipa
   else
-    docker-compose -f $is_file up -d postgres_free9ja
+    docker-compose -f $is_file up -d postgres_chipa
   fi
 fi
 
 
 # Check if redis is running
-if [ "$(docker ps -q -f name=redis_free9ja)" = "" ]; then
+if [ "$(docker ps -q -f name=redis_chipa)" = "" ]; then
 
   # check if there is already a redis container
-  if [ ! "$(docker ps -aq -f name=redis_free9ja)" = "" ]; then
-    docker-compose -f $is_file start redis_free9ja
+  if [ ! "$(docker ps -aq -f name=redis_chipa)" = "" ]; then
+    docker-compose -f $is_file start redis_chipa
   else
-    docker-compose -f $is_file up -d redis_free9ja
+    docker-compose -f $is_file up -d redis_chipa
   fi
 fi
 
-if [ "$(docker ps -q -f name=postgres_free9ja)" != "" ]; then
+if [ "$(docker ps -q -f name=postgres_chipa)" != "" ]; then
     echo "Postgres docker container is running"
   else
     echo "Postgres container not running, please check to see if the docker engine is running"
     exit 1
 fi
 
-if [ "$(docker ps -q -f name=redis_free9ja)" != "" ]; then
+if [ "$(docker ps -q -f name=redis_chipa)" != "" ]; then
     echo "Redis docker container is running"
   else
     echo "Redis container not running, please check to see if the docker engine is running"

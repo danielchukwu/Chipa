@@ -26,7 +26,7 @@ type Config struct {
 	SecretAccessKey string // R2 API Secret Access Key
 	BucketName      string // R2 Bucket name
 	// PublicURL is the optional custom domain or r2.dev URL for serving public objects.
-	// e.g. "https://files.free9ja.com" or "https://pub-xxx.r2.dev"
+	// e.g. "https://files.chipa.com" or "https://pub-xxx.r2.dev"
 	PublicURL  string
 	ZoneID     string       // Cloudflare Zone ID for Edge Cache purging
 	APIToken   string       // Cloudflare API Token for Edge Cache purging

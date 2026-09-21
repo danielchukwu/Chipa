@@ -146,10 +146,10 @@ func SetupRedisTestContainer(redis_port string) (string, testcontainers.Containe
 
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:7.2.13-alpine",
-		ExposedPorts: []string{fmt.Sprintf("%s/tcp", redis_port)},
+		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor: wait.ForListeningPort(
-			fmt.Sprintf("%s/tcp", redis_port),
-		).WithStartupTimeout(300 * time.Second),
+			"6379/tcp",
+		).WithStartupTimeout(60 * time.Second),
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -161,7 +161,7 @@ func SetupRedisTestContainer(redis_port string) (string, testcontainers.Containe
 	}
 
 	host, _ := container.Host(ctx)
-	port, _ := container.MappedPort(ctx, fmt.Sprintf("%s/tcp", redis_port))
+	port, _ := container.MappedPort(ctx, "6379/tcp")
 
 	addr := fmt.Sprintf("%s:%s", host, port.Port())
 	return addr, container, nil

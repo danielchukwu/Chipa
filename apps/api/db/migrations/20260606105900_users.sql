@@ -1,40 +1,36 @@
 -- +goose Up
 
--- USERS TABLE
+-- ============================================================================
+-- 1. USERS TABLE (Core Authentication, Credentials & Account State)
+-- Strictly minimal, high security. Decoupled from legal PII and unencrypted PII.
+-- ============================================================================
 CREATE TABLE users (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  fake_id BIGINT UNIQUE,
-  email VARCHAR(255) UNIQUE,
+  public_id VARCHAR(32) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
   phone VARCHAR(25) UNIQUE,
   username VARCHAR(30) UNIQUE,
+
   password_hash VARCHAR(100) NOT NULL,
-  first_name VARCHAR(30),
-  last_name VARCHAR(30),
-  middle_name VARCHAR(30),
-  gender VARCHAR(10) CHECK (gender IN ('male', 'female')),
-  date_of_birth DATE,
+  pin_hash VARCHAR(100),
 
-  avatar VARCHAR(1000),
-  avatar_file_id BIGINT,
+  -- Fintech Account Classification (Individual vs Business)
+  user_type VARCHAR(20) NOT NULL DEFAULT 'individual'
+    CHECK (user_type IN ('individual', 'business')),
+  country_code VARCHAR(2) NOT NULL DEFAULT 'NG',
+  nationality VARCHAR(2) DEFAULT 'NG',
+  timezone VARCHAR(50) DEFAULT 'Africa/Lagos',
 
-  voters_card_image VARCHAR(255),
+  -- Reference Jurisdiction
+  current_country SMALLINT REFERENCES c_countries(id) DEFAULT 161,
+  current_state SMALLINT REFERENCES c_states(id),
 
-  current_country SMALLINT REFERENCES c_countries(id) NOT NULL,
-  current_state SMALLINT REFERENCES c_states(id) NOT NULL,
-  current_city INT REFERENCES c_cities(id),
-  current_lga INTEGER REFERENCES lgas(id) ON DELETE SET NULL,
-  current_ward INTEGER REFERENCES wards(id) ON DELETE SET NULL,
-  polling_unit_id INT REFERENCES polling_units(id) ON DELETE SET NULL,
+  -- Progressive Compliance Tier (0: Explorer, 1: BVN/NIN, 2: ID+Liveness, 3: Address)
+  kyc_tier SMALLINT DEFAULT 0,
+  kyc_status VARCHAR(30) DEFAULT 'unverified'
+    CHECK (kyc_status IN ('unverified', 'pending', 'verified', 'rejected')),
 
-  country_of_origin SMALLINT REFERENCES c_countries(id),
-  state_of_origin SMALLINT REFERENCES c_states(id),
-
-  has_role BOOLEAN DEFAULT false,
-  is_verified BOOLEAN DEFAULT false,
-  is_politician BOOLEAN DEFAULT false,
-  party_id SMALLINT REFERENCES parties(id) ON DELETE SET NULL,
-
-  account_status VARCHAR(30)
+  account_status VARCHAR(30) NOT NULL DEFAULT 'just_registered'
     CHECK (account_status IN (
       'just_registered',
       'placeholder',
@@ -43,101 +39,194 @@ CREATE TABLE users (
       'suspended',
       'banned',
       'deleted'
-    ))
-    DEFAULT 'just_registered',
+    )),
 
   -- Referral system
-  -- referral_code format: {FIRST_NAME}{2-digit suffix} e.g. "DANIEL40"
-  -- Generated server-side at user registration time, unique per user
   referral_code VARCHAR(30) UNIQUE,
 
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  last_login_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ NULL
 );
 
-CREATE INDEX idx_users_party_id ON users(party_id);
-CREATE INDEX idx_users_polling_unit_id ON users(polling_unit_id);
-CREATE INDEX idx_users_is_politician ON users(is_politician);
+CREATE INDEX idx_users_public_id ON users(public_id);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_phone ON users(phone);
 CREATE INDEX idx_users_account_status ON users(account_status);
+CREATE INDEX idx_users_user_type ON users(user_type);
+CREATE INDEX idx_users_country_code ON users(country_code);
 
--- pg_trgm extension and indexes for fast ILIKE searches
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX idx_users_first_name_trgm ON users USING gin (first_name gin_trgm_ops);
-CREATE INDEX idx_users_last_name_trgm ON users USING gin (last_name gin_trgm_ops);
-CREATE INDEX idx_users_username_trgm ON users USING gin (username gin_trgm_ops);
-
-
--- USER BANK ACCOUNTS TABLE
-CREATE TABLE user_bank_accounts (
-  id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  account_number VARCHAR(50) NOT NULL,
-  bank_code VARCHAR(20) NOT NULL,
-  is_primary BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_user_bank_accounts_user_id ON user_bank_accounts(user_id);
-
--- USERS NIN TABLE
-CREATE TABLE users_nin (
-  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  nin VARCHAR(12) UNIQUE NOT NULL
-);
-
--- USERS Phone number table
-CREATE TABLE users_phone_numbers (
-  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  owner_is_verified BOOLEAN DEFAULT false,
-  phone VARCHAR(25) UNIQUE NOT NULL,
-  raw_input VARCHAR(25) NOT NULL,
-  phonecode VARCHAR(10) NOT NULL,
-  on_whatsapp BOOLEAN DEFAULT false,
-  is_default BOOLEAN DEFAULT false,
-  is_active BOOLEAN DEFAULT true
-);
-CREATE INDEX idx_users_phone_numbers_user_id ON users_phone_numbers(user_id);
-CREATE INDEX idx_users_phone_numbers_phone ON users_phone_numbers(phone);
-
-CREATE TABLE user_more_infos (
+-- ============================================================================
+-- 2. USER PROFILES (Decoupled Legal PII: SOC 2 & GDPR Isolation)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS user_profiles (
   user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  occupation_id SMALLINT REFERENCES occupations(id) ON DELETE SET NULL,
-  educational_status VARCHAR(20) CHECK (educational_status IN ('graduate', 'student', 'none')),
-  highest_degree VARCHAR(20) CHECK (highest_degree IN ('none', 'primary', 'secondary', 'polytechnic', 'bachelors', 'masters', 'phd')),
-  graduation_year VARCHAR(4),
-  school_name VARCHAR(255),
-  degree_certificate_url TEXT,
-  religion VARCHAR(20) CHECK (religion IN ('christianity', 'islam', 'traditional', 'other')),
-  marital_status VARCHAR(20) CHECK (marital_status IN ('single', 'married', 'divorced', 'widowed')),
-  address VARCHAR(255),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  first_name VARCHAR(50) NOT NULL DEFAULT '',
+  last_name VARCHAR(50) NOT NULL DEFAULT '',
+  middle_name VARCHAR(50),
+  date_of_birth DATE,
+  gender VARCHAR(10) CHECK (gender IN ('male', 'female')),
+  nationality VARCHAR(2) NOT NULL DEFAULT 'NG',
+  avatar_url TEXT,
+  profile_photo_url TEXT,
+  avatar_file_id BIGINT,
+  employment_status VARCHAR(30),
+  employer_name VARCHAR(255),
+  annual_income_range VARCHAR(50),
+  occupation VARCHAR(100),
+  -- AML / CFT / Sanctions & PEP Compliance Screening
+  is_pep BOOLEAN NOT NULL DEFAULT false,
+  sanctions_status VARCHAR(20) NOT NULL DEFAULT 'clear' CHECK (sanctions_status IN ('clear', 'flagged', 'blocked')),
+  tax_id VARCHAR(50),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE user_verifications (
+-- ============================================================================
+-- 3. NORMALIZED ADDRESSES (Residential, Business & Delivery)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS addresses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  address_type VARCHAR(20) NOT NULL DEFAULT 'residential' CHECK (address_type IN ('residential', 'business', 'mailing')),
+  line_1 VARCHAR(255) NOT NULL,
+  line_2 VARCHAR(255),
+  city VARCHAR(100) NOT NULL,
+  state VARCHAR(100),
+  postal_code VARCHAR(20),
+  country_code VARCHAR(2) NOT NULL DEFAULT 'NG',
+  is_current BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_addresses_user_id ON addresses(user_id);
+
+-- ============================================================================
+-- 4. ENCRYPTED IDENTITY VAULT (AES-256-GCM + Blind Index for Pan-African IDs)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS identity_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  document_type VARCHAR(30) NOT NULL CHECK (document_type IN (
+    'bvn', 'nin', 'ghana_card', 'ssnit', 'kra_pin', 'huduma_namba',
+    'sa_id', 'national_id', 'passport', 'drivers_license', 'voters_card',
+    'tax_id', 'residence_permit'
+  )),
+  document_number_encrypted BYTEA NOT NULL,
+  document_number_hash CHAR(64) NOT NULL,
+  document_file_id BIGINT,
+  selfie_file_id BIGINT,
+  issuing_country VARCHAR(2) NOT NULL DEFAULT 'NG',
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected')),
+  verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, document_type, issuing_country)
+);
+
+CREATE INDEX IF NOT EXISTS idx_identity_documents_hash ON identity_documents(document_type, document_number_hash);
+CREATE INDEX IF NOT EXISTS idx_identity_documents_user_id ON identity_documents(user_id);
+CREATE INDEX IF NOT EXISTS idx_identity_documents_country ON identity_documents(issuing_country);
+
+-- ============================================================================
+-- 5. DEVICE SECURITY (Fingerprinting & Account Takeover Prevention)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS devices (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  device_fingerprint_hash CHAR(64) NOT NULL,
+  platform VARCHAR(20) NOT NULL CHECK (platform IN ('ios', 'android', 'web', 'unknown')),
+  device_name VARCHAR(100),
+  is_trusted BOOLEAN NOT NULL DEFAULT false,
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, device_fingerprint_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_devices_user_id ON devices(user_id);
+
+-- ============================================================================
+-- 6. SESSIONS (Remote Revocation & Active Session Management)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  device_id UUID REFERENCES devices(id) ON DELETE SET NULL,
+  token_hash CHAR(64) NOT NULL,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
+
+-- ============================================================================
+-- 7. USER VERIFICATIONS (Channel & Compliance Verification Audit Flags)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS user_verifications (
   user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-  nin_verified BOOLEAN DEFAULT false,
-  phone_verified BOOLEAN DEFAULT false,
   email_verified BOOLEAN DEFAULT false,
-  voters_card_verified BOOLEAN DEFAULT false,
+  phone_verified BOOLEAN DEFAULT false,
+  -- Region-agnostic compliance audit flags
+  national_id_verified BOOLEAN DEFAULT false,
+  tax_id_verified BOOLEAN DEFAULT false,
+  liveness_verified BOOLEAN DEFAULT false,
+  id_document_verified BOOLEAN DEFAULT false,
+  address_verified BOOLEAN DEFAULT false,
+  -- Legacy Nigerian specific audit flags (maintained for backward compatibility)
+  bvn_verified BOOLEAN DEFAULT false,
+  nin_verified BOOLEAN DEFAULT false,
   email_verification_token VARCHAR(255) DEFAULT NULL,
   email_last_reminded_at TIMESTAMPTZ,
   phone_last_reminded_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_user_verifications_nin_verified ON user_verifications(nin_verified);
-CREATE INDEX idx_user_verifications_phone_verified ON user_verifications(phone_verified);
-CREATE INDEX idx_user_verifications_email_verified ON user_verifications(email_verified);
+CREATE INDEX IF NOT EXISTS idx_user_verifications_national_id ON user_verifications(national_id_verified);
+CREATE INDEX IF NOT EXISTS idx_user_verifications_nin_verified ON user_verifications(nin_verified);
+CREATE INDEX IF NOT EXISTS idx_user_verifications_phone_verified ON user_verifications(phone_verified);
+CREATE INDEX IF NOT EXISTS idx_user_verifications_email_verified ON user_verifications(email_verified);
+CREATE INDEX IF NOT EXISTS idx_user_verifications_bvn_verified ON user_verifications(bvn_verified);
+
+-- ============================================================================
+-- 8. ORGANIZATIONS & TEAMS (Multi-Tenancy for Freelancers & Businesses)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS organizations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  public_id VARCHAR(32) UNIQUE NOT NULL, -- e.g. "org_..."
+  name VARCHAR(255) NOT NULL,
+  registration_number VARCHAR(100),
+  tax_id VARCHAR(100),
+  country_code VARCHAR(2) NOT NULL DEFAULT 'NG',
+  status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('pending', 'active', 'suspended', 'closed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS organization_members (
+  organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(30) NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'admin', 'finance', 'member', 'viewer')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (organization_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_members_user_id ON organization_members(user_id);
 
 -- +goose Down
-DROP TABLE IF EXISTS user_verifications;
-DROP TABLE IF EXISTS user_more_infos;
-DROP TABLE IF EXISTS users_phone_numbers;
-DROP TABLE IF EXISTS users_nin;
-DROP TABLE IF EXISTS user_bank_accounts;
-DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS organization_members CASCADE;
+DROP TABLE IF EXISTS organizations CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS devices CASCADE;
+DROP TABLE IF EXISTS identity_documents CASCADE;
+DROP TABLE IF EXISTS addresses CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
+DROP TABLE IF EXISTS user_verifications CASCADE;
+DROP TABLE IF EXISTS users CASCADE;

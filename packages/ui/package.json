@@ -3,24 +3,47 @@
   "version": "0.0.0",
   "private": true,
   "exports": {
-    "./*": "./src/*.tsx"
+    "./styles/*": "./src/styles/*",
+    "./fonts/*": "./src/fonts/*",
+    "./components/*": "./src/components/*",
+    "./icons/*": "./src/icons/*",
+    "./lib/*": "./src/lib/*",
+    "./*": "./src/*"
+  },
+  "typesVersions": {
+    "*": {
+      "styles/*": ["./src/styles/*"],
+      "fonts/*": ["./src/fonts/*"],
+      "components/*": ["./src/components/*"],
+      "icons/*": ["./src/icons/*"],
+      "lib/*": ["./src/lib/*"],
+      "*": ["./src/*"]
+    }
   },
   "scripts": {
-    "lint": "eslint . --max-warnings 0",
+    "lint": "biome lint",
+    "format": "biome format --write",
+    "check": "biome check",
     "generate:component": "turbo gen react-component",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
+    "@biomejs/biome": "2.4.5",
     "@repo/typescript-config": "workspace:*",
     "@types/node": "26.4.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
-    "eslint": "10.9.1",
     "typescript": "7.0.2"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.577.0",
+    "radix-ui": "^1.6.7",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "tailwind-merge": "^3.0.2",
+    "usehooks-ts": "^3.1.0"
   }
 }

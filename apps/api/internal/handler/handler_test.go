@@ -59,5 +59,5 @@ func TestRoot(t *testing.T) {
 	require.NoError(t, err, "failed to unmarshal response body")
 
 	require.Equal(t, true, actual["success"])
-	require.Equal(t, "free9ja API v1", actual["message"])
+	require.Equal(t, "Chipa API v1", actual["message"])
 }

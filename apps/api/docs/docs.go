@@ -24,540 +24,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/agent-marketing-campaigns": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns a paginated list of all party marketing campaigns with party, plan, election_group, and election details",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Marketing"
-                ],
-                "summary": "List all party marketing campaigns (Admin)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID filter",
-                        "name": "party_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID filter",
-                        "name": "election_group_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Status filter",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 20,
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor (ID)",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Marketing campaigns retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/agent-marketing-campaigns/{id}": {
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Deletes a marketing campaign by ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Marketing"
-                ],
-                "summary": "Delete marketing campaign (Admin)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Campaign ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Marketing campaign deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/agent-marketing-campaigns/{id}/status": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Updates a marketing campaign status (e.g. active, inactive, completed). When set to active, sets start_date to today, end_date to start_date + duration, and deducts budget_per_day to amount_spent.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Marketing"
-                ],
-                "summary": "Update marketing campaign status (Admin)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Campaign ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Status payload e.g. {\\",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Marketing campaign status updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/inec-result-grabber-logs": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves paginated execution logs across grabbers",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "INEC Result Grabber"
-                ],
-                "summary": "List all INEC result grabber logs",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Filter by grabber ID",
-                        "name": "grabber_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit results (default 20)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor for pagination",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Logs retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/inec-result-grabbers": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves paginated INEC result grabbers with election details and metrics",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "INEC Result Grabber"
-                ],
-                "summary": "List INEC result grabbers",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Limit results (default 20)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor for pagination",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "INEC result grabbers retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/inec-result-grabbers/{id}/logs": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves paginated execution logs for a specific INEC result grabber",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "INEC Result Grabber"
-                ],
-                "summary": "List INEC result grabber sync logs",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "INEC Result Grabber ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit results (default 20)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset results (default 0)",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Logs retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid grabber ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/inec-result-grabbers/{id}/sync": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Triggers a manual sync run for the specified INEC result grabber",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "INEC Result Grabber"
-                ],
-                "summary": "Manually trigger INEC result grabber sync",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "INEC Result Grabber ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Upload result sheet images to R2 (default from config)",
-                        "name": "upload_to_r2",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Extract candidate results via AI (default from config)",
-                        "name": "ai_extract",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Sync completed successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request params",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/inec-result-grabbers/{id}/toggle-pause": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "INEC Result Grabber"
-                ],
-                "summary": "Toggle pause/resume status of INEC result grabber",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "INEC Result Grabber ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/parties/{id}/discount": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Sets the slot discount percentage for a political party (Admin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin Parties"
-                ],
-                "summary": "Set customized slot discount for a party",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Discount request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.SetPartyDiscountRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Party discount updated",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/parties/{id}/verify": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows an admin to toggle the verification status of a political party.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Toggle party verification",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Toggle Verification request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.ToggleVerificationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Party verification updated",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/admin/referrals": {
             "get": {
                 "security": [
@@ -711,60 +177,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/settings/slot-price": {
-            "get": {
-                "description": "Retrieves the global, app-wide price of a single polling unit slot in Kobo",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin Settings"
-                ],
-                "summary": "Get global slot price",
-                "responses": {
-                    "200": {
-                        "description": "Global slot price retrieved",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Updates the global, app-wide price of a single polling unit slot in Kobo (Admin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin Settings"
-                ],
-                "summary": "Update global slot price",
-                "parameters": [
-                    {
-                        "description": "Slot Price request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.SetSlotPriceRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Global slot price updated",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/admin/settings/{key}": {
             "get": {
                 "security": [
@@ -895,129 +307,6 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/unmatched-polling-unit-results": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves paginated queue of results submitted without a matching polling unit in the system",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "INEC Result Grabber"
-                ],
-                "summary": "List unmatched polling unit results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Filter by election ID",
-                        "name": "election_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status (pending, resolved_mapped, resolved_created_pu, rejected)",
-                        "name": "resolution_status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit results (default 20)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset results (default 0)",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Unmatched results retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/unmatched-polling-unit-results/{id}/resolve": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Resolves an unmatched result by mapping to an existing/new polling unit or rejecting it",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "INEC Result Grabber"
-                ],
-                "summary": "Resolve unmatched polling unit result",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Unmatched Result ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Resolution payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/inecgrabber.ResolveUnmatchedRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Unmatched result resolved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
                         }
                     }
                 }
@@ -1172,159 +461,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/admin/verifications": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Assign multiple verifications to a page",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Page Verifications"
-                ],
-                "summary": "Assign verifications to a page",
-                "parameters": [
-                    {
-                        "description": "Assign Verification request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pageverificationshandler.AssignVerificationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Verifications assigned successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to assign verifications",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Remove a verification from a page",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Page Verifications"
-                ],
-                "summary": "Remove a verification from a page",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Page Type",
-                        "name": "page_type",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page ID",
-                        "name": "page_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Verification Type ID",
-                        "name": "verification_type_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Verification removed successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to remove verification",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/agent-marketing-plans": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns all active marketing plans of the specified type (e.g. agent-campaign)",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Marketing"
-                ],
-                "summary": "Get plans by type",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "default": "agent-campaign",
-                        "description": "Campaign type",
-                        "name": "type",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Marketing plans retrieved successfully",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1556,9 +692,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/login": {
+        "/auth/forgot-password/email-otp": {
             "post": {
-                "description": "Authenticates a user and returns access and refresh tokens",
+                "description": "Sends an OTP for password recovery",
                 "consumes": [
                     "application/json"
                 ],
@@ -1568,15 +704,106 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Login user",
+                "summary": "Send forgot password email OTP",
                 "parameters": [
                     {
-                        "description": "Login credentials",
+                        "description": "Email OTP request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/authhandler.LoginRequest"
+                            "$ref": "#/definitions/authhandler.SendSignupEmailOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login": {
+            "post": {
+                "description": "Verifies email/identifier and password, returns short-lived pre-auth token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login Phase 1 (Credentials)",
+                "parameters": [
+                    {
+                        "description": "User credentials",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authhandler.LoginCredentialsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/login/pin": {
+            "post": {
+                "description": "Verifies 4-digit transaction PIN using pre-auth token and issues full session JWTs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login Phase 2 (PIN)",
+                "parameters": [
+                    {
+                        "description": "PIN and pre-auth token",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authhandler.LoginPinRequest"
                         }
                     }
                 ],
@@ -1647,54 +874,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/partyapp/login": {
-            "post": {
-                "description": "Authenticates a party member and returns access and refresh tokens",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Login party member user",
-                "parameters": [
-                    {
-                        "description": "Party login credentials",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/authhandler.PartyLoginRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/authhandler.AdminLoginResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/auth/refresh": {
             "post": {
                 "description": "Handles token rotation using a valid refresh token",
@@ -1736,55 +915,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/register_candidate": {
-            "post": {
-                "description": "Creates a new candidate placeholder user account",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Register a new candidate user with placeholder status",
-                "parameters": [
-                    {
-                        "description": "Candidate registration details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/authhandler.RegisterCandidatePlaceholderRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1858,7 +988,7 @@ const docTemplate = `{
         },
         "/auth/signup": {
             "post": {
-                "description": "Handles the basic user registration (phone, email, password, country)",
+                "description": "Handles initial registration with country ID, email, password, and verification code",
                 "consumes": [
                     "application/json"
                 ],
@@ -1868,7 +998,7 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Basic sign-up",
+                "summary": "Basic sign-up (Phase 1)",
                 "parameters": [
                     {
                         "description": "Basic sign-up details",
@@ -1877,6 +1007,90 @@ const docTemplate = `{
                         "required": true,
                         "schema": {
                             "$ref": "#/definitions/authhandler.SignupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup/email-otp": {
+            "post": {
+                "description": "Sends a 6-digit verification OTP to a new user's email during registration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Send signup email OTP",
+                "parameters": [
+                    {
+                        "description": "Email OTP request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authhandler.SendSignupEmailOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/signup/email-otp/verify": {
+            "post": {
+                "description": "Verifies the OTP sent to a new user's email during registration",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify signup email OTP",
+                "parameters": [
+                    {
+                        "description": "Verify email OTP request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authhandler.VerifySignupEmailOTPRequest"
                         }
                     }
                 ],
@@ -1949,7 +1163,7 @@ const docTemplate = `{
         },
         "/banks": {
             "get": {
-                "description": "Returns a list of real Nigerian banks from Monnify",
+                "description": "Returns a list of real Nigerian banks from Paystack",
                 "consumes": [
                     "application/json"
                 ],
@@ -1980,7 +1194,7 @@ const docTemplate = `{
         },
         "/banks/validate": {
             "get": {
-                "description": "Validates account number and bank code via Monnify, returning the account name",
+                "description": "Validates account number and bank code via Paystack, returning the account name",
                 "consumes": [
                     "application/json"
                 ],
@@ -2032,19 +1246,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/bodies/metrics": {
+        "/bills/categories": {
             "get": {
-                "description": "Fetches aggregated metrics for electoral bodies nationwide",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Returns supported bill categories (airtime, data, electricity, cable_tv)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Bodies"
+                    "VAS"
                 ],
-                "summary": "Get national body metrics",
+                "summary": "Get VAS bill categories",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2052,550 +1263,32 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
                     }
                 }
             }
         },
-        "/bodies/sync-electoral-units": {
-            "post": {
-                "description": "Fetches and synchronizes all electoral units from INEC API (unauthenticated)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bodies"
-                ],
-                "summary": "Synchronize electoral units from INEC API",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/bodies/sync-electoral-units-state-flow": {
-            "post": {
-                "description": "Fetches and synchronizes all electoral units from INEC API using Governorship election state flow (unauthenticated)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bodies"
-                ],
-                "summary": "Synchronize electoral units from INEC API using State (Governorship) Flow",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/countries": {
+        "/bills/operators": {
             "get": {
-                "description": "Fetches a list of all countries with their ISO2 codes, phone codes",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Returns billers/operators for a given category (e.g. MTN, Airtel, IKEDC, DSTV)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Bodies"
+                    "VAS"
                 ],
-                "summary": "Get all countries",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/bodieshandler.GetCountriesResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/countries/{countryID}/states": {
-            "get": {
-                "description": "Fetches all states for a specific country by its ID with cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bodies"
-                ],
-                "summary": "Get states by country ID",
+                "summary": "Get VAS operators",
                 "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Country ID",
-                        "name": "countryID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/bodieshandler.GetStatesResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/election-groups": {
-            "get": {
-                "description": "Fetches a paginated list of election groups using cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionGroups"
-                ],
-                "summary": "List election groups",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
                     {
                         "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Party ID for stats",
-                        "name": "party_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Election groups fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a new election group with name, rank, counts, and election date",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionGroups"
-                ],
-                "summary": "Create a new election group",
-                "parameters": [
-                    {
-                        "description": "Create Election Group payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electiongroupshandler.CreateElectionGroupRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Election group created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/election-groups/{id}": {
-            "get": {
-                "description": "Retrieves details of a single election group using its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionGroups"
-                ],
-                "summary": "Get election group by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Election group fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Election group not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies name, rank, counts, or election date of an existing election group",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionGroups"
-                ],
-                "summary": "Update an election group",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update Election Group payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electiongroupshandler.UpdateElectionGroupRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Election group updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Election group not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes an election group from the database by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionGroups"
-                ],
-                "summary": "Delete an election group",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Election group deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Election group not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/election-groups/{id}/elections": {
-            "get": {
-                "description": "Fetches the list of elections associated with a specific election group ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionGroups"
-                ],
-                "summary": "List elections for an election group",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Elections fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid election group ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/election-groups/{id}/party-stats": {
-            "put": {
-                "description": "Upserts party-specific statistics for an election group",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionGroups"
-                ],
-                "summary": "Upsert party election group stats",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Upsert Stats payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electiongroupshandler.UpsertPartyElectionGroupStatsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Stats upserted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/election-groups/{id}/vote-status": {
-            "get": {
-                "description": "Returns the vote status (voted, did_not_vote, none) and associated data (votes or reason).",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Get user's vote status for an election group",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "id",
-                        "in": "path",
+                        "description": "VAS Category (airtime, data, electricity, cable_tv)",
+                        "name": "category",
+                        "in": "query",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -2611,1106 +1304,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/elections": {
-            "get": {
-                "description": "Fetches a paginated list of elections using cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "List elections",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Elections fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a new election with name, candidates count, date, group ID, and type ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Create a new election",
-                "parameters": [
-                    {
-                        "description": "Create Election payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Election created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/eligible": {
-            "get": {
-                "description": "Returns all elections eligible for a given polling unit and election group, each enriched with their list of candidates (name, avatar, party info). Candidates may be empty if none have been set up.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Get eligible elections with candidates for a polling unit",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "election_group_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Polling Unit ID",
-                        "name": "polling_unit_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Eligible elections fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Missing or invalid query parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/federal-constituency": {
-            "post": {
-                "description": "Creates elections for selected federal constituencies with auto-generated names, grouped together",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Create federal constituency elections",
-                "parameters": [
-                    {
-                        "description": "Create Federal Constituency Elections payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateFederalConstituencyElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Federal constituency elections created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/lga": {
-            "post": {
-                "description": "Creates elections for selected LGAs with auto-generated names, grouped together",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Create LGA elections",
-                "parameters": [
-                    {
-                        "description": "Create LGA Elections payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateLgaElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "LGA elections created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/nationwide": {
-            "post": {
-                "description": "Creates a new nationwide election with auto-generated names and associated candidates",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Create a new nationwide election",
-                "parameters": [
-                    {
-                        "description": "Create Nationwide Election payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateNationwideElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Nationwide election created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results": {
-            "get": {
-                "description": "Returns the specific final result for the provided scope parameters.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get scoped final result",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Polling Unit ID",
-                        "name": "polling_unit_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Ward ID",
-                        "name": "ward_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State Constituency ID",
-                        "name": "state_constituency_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "LGA ID",
-                        "name": "lga_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Federal Constituency ID",
-                        "name": "federal_constituency_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID",
-                        "name": "senatorial_district_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State ID",
-                        "name": "state_id",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/breakdown": {
-            "get": {
-                "description": "Returns a collection of child electoral units (states, LGAs, wards, polling units) joined with results for a given scope.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get electoral units results breakdown",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State ID",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID",
-                        "name": "senatorial_district_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Federal Constituency ID",
-                        "name": "federal_constituency_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State Constituency ID",
-                        "name": "state_constituency_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "LGA ID",
-                        "name": "lga_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Ward ID",
-                        "name": "ward_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Override child unit type (e.g. 'lgas')",
-                        "name": "unit_type",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/federal-constituencies": {
-            "get": {
-                "description": "Returns federal constituencies for a senatorial district with their election_federal_constituency_final_result.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get federal constituencies with results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID",
-                        "name": "senatorial_district_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/lgas": {
-            "get": {
-                "description": "Returns LGAs for a federal constituency with their election_lga_final_result.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get LGAs with results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Federal Constituency ID",
-                        "name": "federal_constituency_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/polling-units": {
-            "get": {
-                "description": "Returns polling units for a ward with their polling_unit_final_result.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get polling units with results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Ward ID",
-                        "name": "ward_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/senatorial-districts": {
-            "get": {
-                "description": "Returns senatorial districts for a state with their election_senatorial_district_final_result.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get senatorial districts with results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State ID",
-                        "name": "state_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/state-constituencies": {
-            "get": {
-                "description": "Returns state assembly constituencies with their election_state_constituency_final_result.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get state constituencies with results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State ID",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Federal Constituency ID",
-                        "name": "federal_constituency_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID",
-                        "name": "senatorial_district_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "LGA ID",
-                        "name": "lga_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/states": {
-            "get": {
-                "description": "Returns all Nigerian states with their election_state_final_result for the given election_id.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get states with results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/results/wards": {
-            "get": {
-                "description": "Returns wards for a given LGA or state_assembly_constituency with their election_ward_final_result.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "ElectionResults"
-                ],
-                "summary": "Get wards with results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "election_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "LGA ID",
-                        "name": "lga_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State Assembly Constituency ID",
-                        "name": "state_assembly_constituency_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/senatorial-district": {
-            "post": {
-                "description": "Creates elections for selected senatorial districts with auto-generated names, grouped together",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Create senatorial district elections",
-                "parameters": [
-                    {
-                        "description": "Create Senatorial District Elections payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateSenatorialDistrictElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Senatorial district elections created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/state": {
-            "post": {
-                "description": "Creates elections for selected states with auto-generated names, grouped together",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Create state elections",
-                "parameters": [
-                    {
-                        "description": "Create State Elections payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateStateElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "State elections created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/state-constituency": {
-            "post": {
-                "description": "Creates elections for selected state constituencies with auto-generated names, grouped together",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Create state constituency elections",
-                "parameters": [
-                    {
-                        "description": "Create State Constituency Elections payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateStateConstituencyElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "State constituency elections created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/ward": {
+        "/bills/pay": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates elections for selected Wards with auto-generated names, grouped together",
+                "description": "Purchases airtime/data or pays electricity/TV bill with transaction PIN verification",
                 "consumes": [
                     "application/json"
                 ],
@@ -3718,397 +1319,30 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Elections"
+                    "VAS"
                 ],
-                "summary": "Create Ward elections",
+                "summary": "Pay bill or purchase airtime/data",
                 "parameters": [
                     {
-                        "description": "Create Ward Elections payload",
+                        "description": "Bill payment payload",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/electionshandler.CreateWardElectionRequest"
+                            "$ref": "#/definitions/vashandler.PayBillRequest"
                         }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Ward elections created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/{id}": {
-            "get": {
-                "description": "Retrieves details of a single election using its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Get election by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Election fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Election not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies name, candidates count, date, group ID, or type ID of an existing election",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Update an election",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update Election payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.UpdateElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Election updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Election not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes an election from the database by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Delete an election",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Election deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Election not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/elections/{id}/candidates": {
-            "get": {
-                "description": "Fetches the list of candidates associated with a specific election ID",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Get detailed candidates for an election",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Candidates fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid election ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Overwrites/synchronizes the list of candidate IDs associated with a specific election ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Elections"
-                ],
-                "summary": "Sync candidates for an election",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Candidate IDs payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/electionshandler.SyncCandidatesRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Candidates synced successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or election ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/federal-constituencies": {
-            "get": {
-                "description": "Fetches federal constituencies with optional state_id and senatorial_district_id filtering and cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Federal Constituencies"
-                ],
-                "summary": "Get federal constituencies",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "State ID to filter by",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID to filter by",
-                        "name": "senatorial_district_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/federalconstituencieshandler.GetFederalConstituenciesResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a federal constituency under a state and senatorial district",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Federal Constituencies"
-                ],
-                "summary": "Create a new federal constituency",
-                "parameters": [
-                    {
-                        "description": "Create request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/federalconstituencieshandler.CreateFederalConstituencyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Federal constituency created successfully",
-                        "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Invalid request payload or missing fields",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4116,20 +1350,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4138,9 +1358,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/federal-constituencies/{id}": {
-            "get": {
-                "description": "Retrieves details of a single federal constituency using its unique database ID",
+        "/bills/validate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Validates recipient details (e.g. electricity meter or cable TV smartcard) before payment",
                 "consumes": [
                     "application/json"
                 ],
@@ -4148,89 +1373,56 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Federal Constituencies"
+                    "VAS"
                 ],
-                "summary": "Get a federal constituency by ID",
+                "summary": "Validate meter or smartcard number",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Federal Constituency ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Federal constituency fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Federal constituency not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies the details of an existing federal constituency",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Federal Constituencies"
-                ],
-                "summary": "Update a federal constituency",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Federal Constituency ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update request payload",
+                        "description": "Validation payload",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/federalconstituencieshandler.UpdateFederalConstituencyRequest"
+                            "$ref": "#/definitions/vashandler.ValidateRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Federal constituency updated successfully",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Invalid payload or ID parameter",
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cards": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all cards owned by the authenticated user",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cards"
+                ],
+                "summary": "List virtual and physical cards",
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4238,27 +1430,6 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Federal constituency not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4266,8 +1437,13 @@ const docTemplate = `{
                     }
                 }
             },
-            "delete": {
-                "description": "Removes a federal constituency from the database by its ID",
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Issues a Visa or Mastercard in USD, NGN, GBP, or EUR",
                 "consumes": [
                     "application/json"
                 ],
@@ -4275,28 +1451,79 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Federal Constituencies"
+                    "Cards"
                 ],
-                "summary": "Delete a federal constituency",
+                "summary": "Create a new virtual or physical card",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Federal Constituency ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
+                        "description": "Card creation parameters",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cardshandler.CreateCardRequest"
+                        }
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Federal constituency deleted successfully",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Invalid ID parameter",
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cards/{id}/details": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Reveals PAN, CVV, and expiry date (requires transaction PIN in query ?pin=...)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cards"
+                ],
+                "summary": "Get sensitive card details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Transaction PIN",
+                        "name": "pin",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4309,22 +1536,153 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
                     "404": {
-                        "description": "Federal constituency not found",
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cards/{id}/freeze": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Freezes an active card to block transactions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cards"
+                ],
+                "summary": "Freeze card",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
-                    "500": {
-                        "description": "Internal server error",
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cards/{id}/fund": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Funds a card from an account balance (requires transaction PIN)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cards"
+                ],
+                "summary": "Fund card",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fund card payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cardshandler.FundCardRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/cards/{id}/unfreeze": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Unfreezes a frozen card to restore transactions",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Cards"
+                ],
+                "summary": "Unfreeze card",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Card ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -4606,9 +1964,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/lgas": {
-            "get": {
-                "description": "Fetches LGAs with optional state_id filtering",
+        "/fx/quote": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates a guaranteed FX quote valid for 60 seconds",
                 "consumes": [
                     "application/json"
                 ],
@@ -4616,2554 +1979,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Bodies"
+                    "FX"
                 ],
-                "summary": "Get local government areas (LGAs)",
+                "summary": "Create conversion quote",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "State ID to filter by",
-                        "name": "state_id",
-                        "in": "query"
+                        "description": "Quote request payload",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/fxhandler.CreateQuoteRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/bodieshandler.GetLGAsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/offices": {
-            "get": {
-                "description": "Fetches a paginated list of offices using cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Offices"
-                ],
-                "summary": "List offices",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Offices fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a new office with name, office, scope, rank, and optional inec_election_type_id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Offices"
-                ],
-                "summary": "Create a new office",
-                "parameters": [
-                    {
-                        "description": "Create Office payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/officeshandler.CreateOfficeRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Office created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/offices/{id}": {
-            "get": {
-                "description": "Retrieves details of a single office using its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Offices"
-                ],
-                "summary": "Get office by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Office ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Office fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Office not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies name, election, scope, rank, or inec_election_type_id of an existing office",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Offices"
-                ],
-                "summary": "Update an office",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Office ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update Office payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/officeshandler.UpdateOfficeRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Office updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Office not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes an office from the database by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Offices"
-                ],
-                "summary": "Delete an office",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Office ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Office deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Office not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties": {
-            "get": {
-                "description": "Fetches a paginated list of political parties ordered by ID using cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "List all political parties",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Order by field (default: display_order, enum: display_order, name, short_name)",
-                        "name": "order_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Order direction (default: ASC, enum: ASC, DESC)",
-                        "name": "order",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Parties fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a political party with a unique short name, full name, and logo",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Create a new political party",
-                "parameters": [
-                    {
-                        "description": "Create Party request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.CreatePartyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "210": {
-                        "description": "Party created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/public": {
-            "get": {
-                "description": "Fetches a list of political parties ordered by ID, returns only basic fields.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "List public political parties",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Order by field (default: display_order, enum: display_order, name, short_name)",
-                        "name": "order_by",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Order direction (default: ASC, enum: ASC, DESC)",
-                        "name": "order",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Parties fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/wallets/provision-missing": {
-            "post": {
-                "description": "Iterates over all existing political parties and provisions a Monnify reserved account wallet for any party that currently lacks one. Used primarily for testing and manual recovery.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Provision missing wallets for political parties",
-                "responses": {
-                    "200": {
-                        "description": "Provisioning details",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}": {
-            "get": {
-                "description": "Retrieves details of a single political party using its unique database ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Get a political party by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Party fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Party not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies the short name, full name, or logo URL of an existing political party",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Update a political party",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update Party request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.UpdatePartyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Party updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Party not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes a political party from the database by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Delete a political party",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Party deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Party not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/agent-marketing-campaigns": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns all marketing campaigns associated with the specified party",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Marketing"
-                ],
-                "summary": "Get marketing campaigns for a party",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Marketing campaigns retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new agent marketing campaign for the specified party, deducting the budget from their wallet",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Marketing"
-                ],
-                "summary": "Create a marketing campaign for a party",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Create marketing campaign payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.CreateMarketingCampaignRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Marketing campaign created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/agent-targets": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves the agent acquisition targets for a party",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Get party agent acquisition targets",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Agent targets retrieved successfully",
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.UpdateAgentTargetsRequest"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Updates the agent acquisition targets for a party",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Update party agent acquisition targets",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Targets payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.UpdateAgentTargetsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Agent targets updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/allowances/deposit": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Debits a party's main wallet balance and deposits it to their polling agent allowance budget",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Deposit money to polling agent allowance budget",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Deposit Allowance request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.DepositAllowanceRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Allowance deposited successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/allowances/settings": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the current agent_payment_allocation_kobo for a party as a parsed JSON object.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Get agent payment allocation",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Allocation fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Saves the polling agent allowance budget settings per role and state for a party.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Update agent payment allocation",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Agent payment allocation payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.agentPaymentAllocation"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Allowances configuration updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/slots/buy": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Deducts from a party's wallet and increases their polling unit assignment slot balance",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Buy slots for a party",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Buy Slots request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.BuySlotsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Slots purchased successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/slots/price": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Calculates the customized price of a single slot for a political party, accounting for their discount",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Get party slot price",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Party slot price retrieved",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/wallet": {
-            "get": {
-                "description": "Returns the reserved virtual account details and current balance (in Kobo) for a political party. The account_numbers field contains one or more bank account numbers that donors can transfer funds to directly.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Get a party's wallet",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Wallet fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Wallet not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Manually provisions a Monnify reserved virtual account for a party that does not yet have a wallet. Idempotent — returns an error if the party already has a wallet.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Create a wallet for a party (admin)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Wallet created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Party not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Wallet already exists",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/wallet/deposit-test": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Directly credits a party's wallet balance (useful in sandbox/testing)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Simulate deposit to party wallet",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Deposit request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.DepositAllowanceRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Wallet funded successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/wallet/transactions": {
-            "get": {
-                "description": "Returns a paginated list of credit/debit transactions for a party's wallet, ordered newest first. Accessible by admins only.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "List a party's wallet transactions",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Number of results (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset for pagination (default 0)",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Transactions fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID or pagination parameters",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Wallet not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{id}/wallet/withdraw": {
-            "post": {
-                "description": "Debits the party wallet balance and records a pending withdrawal transaction. The party member must be authenticated.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Withdraw from a party wallet",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Withdrawal payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.WithdrawRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Withdrawal recorded",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "402": {
-                        "description": "Insufficient funds",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Party or wallet not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/parties/{party_id}/{short_name}/profile": {
-            "get": {
-                "description": "Get party details by party ID and short name",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Parties"
-                ],
-                "summary": "Get basic party profile",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "party_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Party Short Name",
-                        "name": "short_name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/utils.SuccessResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/party-applications": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Fetches a list of polling agent applications. Scoped: Party admins can only view applications for their own party.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "List polling agent applications",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Filter by Party ID",
-                        "name": "party_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Election Group ID",
-                        "name": "election_group_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by Status (pending, accepted, rejected)",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Pagination Limit (default 20)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Pagination Offset (default 0)",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Applications fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows an authenticated user to submit an application to become a polling agent for a party and election group. Updates the user's profile with agent details.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "Submit a polling agent application",
-                "parameters": [
-                    {
-                        "description": "Submit Application payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partyapplicationshandler.SubmitApplicationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Application submitted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Already applied for this election group",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/party-applications/recommendations": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the applicant's submitted polling unit plus the 2 lowest-agent-count polling units in the same LGA for the party/election group.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "Get polling unit recommendations for an application",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Party ID",
-                        "name": "party_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID",
-                        "name": "election_group_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "LGA ID of the applicant",
-                        "name": "lga_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "The polling unit the applicant originally applied for",
-                        "name": "polling_unit_id",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/party-applications/supervisor": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows an accepted polling agent to submit an application to become a ward, LGA, or state supervisor. Requires higher education degree.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "Submit a supervisor application",
-                "parameters": [
-                    {
-                        "description": "Submit Supervisor Application payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partyapplicationshandler.SubmitSupervisorApplicationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Supervisor application submitted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or eligibility failure",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Already applied for this election group",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/party-applications/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves detailed info of an application by ID. Scoped: Party admins can only view if it belongs to their own party.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "Get a specific polling agent application",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Application ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Application retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Application not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/party-applications/{id}/approve": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Accepts the application, assigns the applicant to the specified polling unit, and elevates the user's role to polling agent. Scoped: Party admins can only approve for their own party.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "Approve a polling agent application",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Application ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Approval payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partyapplicationshandler.ApproveApplicationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Application approved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Constraint conflict (already assigned/processed)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/party-applications/{id}/cancel": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Cancels the application. Only the owner of the application can cancel it.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "Cancel a polling agent application",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Application ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Application cancelled successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Application already processed",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/party-applications/{id}/reject": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Rejects the application with a reason. Scoped: Party admins can only reject for their own party.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingAgentApplications"
-                ],
-                "summary": "Reject a polling agent application",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Application ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Rejection payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partyapplicationshandler.RejectApplicationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Application rejected successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Application already processed",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/plans": {
-            "get": {
-                "description": "Retrieves marketing plans. Optionally filter by ?type= (e.g. agent-campaign) and ?is_active= (true/false).",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Plans"
-                ],
-                "summary": "Get plans",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Campaign type filter (e.g. agent-campaign)",
-                        "name": "type",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filter by active status",
-                        "name": "is_active",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Plans retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a new marketing plan (admin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Plans"
-                ],
-                "summary": "Create a marketing plan",
-                "parameters": [
-                    {
-                        "description": "Create Plan payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.CreatePlanRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Plan created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/plans/{id}": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Updates an existing marketing plan (admin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Plans"
-                ],
-                "summary": "Update a marketing plan",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Plan ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update Plan payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.UpdatePlanRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Plan updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Deletes an existing marketing plan (admin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Plans"
-                ],
-                "summary": "Delete a marketing plan",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Plan ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Plan deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/plans/{id}/display-order": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Updates the display_order of a specific plan (admin only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Plans"
-                ],
-                "summary": "Update a plan's display order",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Plan ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Display order payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/partieshandler.UpdatePlanDisplayOrderRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Plan display order updated",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/polling-unit-assignments": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Fetches a list of assignments with optional filters for election_group_id, party_id, polling_unit_id, and user_id. Supports pagination.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingUnitAssignments"
-                ],
-                "summary": "List polling unit assignments",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Filter by Election Group ID",
-                        "name": "election_group_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Party ID",
-                        "name": "party_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Polling Unit ID",
-                        "name": "polling_unit_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by User ID",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Pagination Limit (default 20)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Pagination Offset (default 0)",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Assignments fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates a polling unit assignment. Role level enforcement ensures party admins can only assign users for their own party.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingUnitAssignments"
-                ],
-                "summary": "Assign a user to a polling unit for an election group",
-                "parameters": [
-                    {
-                        "description": "Create Assignment payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/puassignmentshandler.CreateAssignmentRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Assignment created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Constraint conflict (already assigned)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/polling-unit-assignments/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieves an assignment record by its ID.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingUnitAssignments"
-                ],
-                "summary": "Get details of a specific assignment",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Assignment ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Assignment fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Assignment not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes/revokes a polling unit assignment.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingUnitAssignments"
-                ],
-                "summary": "Delete an assignment",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Assignment ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Assignment deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Assignment not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/polling-unit-assignments/{id}/tracking": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Allows agents to submit verification videos and times. Users can only update their own assignments.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "PollingUnitAssignments"
-                ],
-                "summary": "Update polling unit assignment tracking (arrival, phases)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Assignment ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update Tracking payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/puassignmentshandler.UpdateAssignmentTrackingRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Assignment tracking updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Permission denied",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Assignment not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/polling-unit-updates": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Fetches a list of polling unit updates using cursor-based pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Updates"
-                ],
-                "summary": "List Polling Unit Updates",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Filter by Election Group ID",
-                        "name": "election_group_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Party ID",
-                        "name": "party_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Polling Unit ID",
-                        "name": "polling_unit_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by User ID",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by State ID",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by LGA ID",
-                        "name": "lga_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by Ward ID",
-                        "name": "ward_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Filter by Is Report",
-                        "name": "is_report",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor (ID to paginate from)",
-                        "name": "cursor",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Submit an update or report for a polling unit",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Updates"
-                ],
-                "summary": "Create Polling Unit Update",
-                "parameters": [
-                    {
-                        "description": "Update Details",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/polling_unit_updates.CreateUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -7182,6 +2014,27 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
+                    }
+                }
+            }
+        },
+        "/fx/rates": {
+            "get": {
+                "description": "Returns mid-market exchange rates and spreads for NGN, USD, GBP, EUR",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "FX"
+                ],
+                "summary": "Get live FX rates",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
@@ -7193,398 +2046,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/polling-units": {
-            "get": {
-                "description": "Fetches polling units with optional ward_id, lga_id, and state_id filtering and cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Polling Units"
-                ],
-                "summary": "Get polling units",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Ward ID to filter by",
-                        "name": "ward_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "LGA ID to filter by",
-                        "name": "lga_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State ID to filter by",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Party ID for capacity check",
-                        "name": "party_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Election Group ID for capacity check",
-                        "name": "election_group_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/pollingunitshandler.GetPollingUnitsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a polling unit under state, LGA, and ward",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Polling Units"
-                ],
-                "summary": "Create a new polling unit",
-                "parameters": [
-                    {
-                        "description": "Create request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pollingunitshandler.CreatePollingUnitRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Polling unit created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/polling-units/{id}": {
-            "get": {
-                "description": "Retrieves details of a single polling unit using its unique database ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Polling Units"
-                ],
-                "summary": "Get a polling unit by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Polling Unit ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Polling unit fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Polling unit not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies the details of an existing polling unit",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Polling Units"
-                ],
-                "summary": "Update a polling unit",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Polling Unit ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/pollingunitshandler.UpdatePollingUnitRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Polling unit updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Polling unit not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes a polling unit from the database by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Polling Units"
-                ],
-                "summary": "Delete a polling unit",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Polling Unit ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Polling unit deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Polling unit not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/practice-tests": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the authenticated user's practice tests. Pass user_id to filter by a specific user (admin use).",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Practice Tests"
-                ],
-                "summary": "List practice tests",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Filter by user ID (defaults to self)",
-                        "name": "user_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Filter by election group",
-                        "name": "election_group_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status (in_progress|completed)",
-                        "name": "status",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size (default 50)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Cursor for pagination",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/utils.SuccessResponse"
-                        }
-                    }
-                }
-            },
+        "/fx/swap": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Saves the practice test attempt and recalculates the user's overall score",
+                "description": "Executes a currency swap using an active quote ID and transaction PIN",
                 "consumes": [
                     "application/json"
                 ],
@@ -7592,107 +2061,324 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Practice Tests"
+                    "FX"
                 ],
-                "summary": "Submit a completed practice test session",
+                "summary": "Execute currency swap",
                 "parameters": [
                     {
-                        "description": "Submit Practice Test",
+                        "description": "Swap execution payload",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/practicetestshandler.SubmitPracticeTestRequest"
+                            "$ref": "#/definitions/fxhandler.ExecuteSwapRequest"
                         }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/utils.SuccessResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/practicetestshandler.PracticeTestResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/practice-tests/payout-preview": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the potential payout for the next practice test the user takes, based on their role, party payment allocation, and how many tests they have already taken in the active time window. All monetary values (potential_window_payout_kobo, potential_test_payout_kobo, readiness_budget_kobo) are returned in kobo.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Practice Tests"
-                ],
-                "summary": "Get practice test payout preview",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "The election group to preview payout for",
-                        "name": "election_group_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Role override (default: polling_agent)",
-                        "name": "role",
-                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/utils.SuccessResponse"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/utils.ErrorResponse"
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/kyc/compliance-screening": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Records AML screening status, PEP declaration, and tax identification number.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "KYC"
+                ],
+                "summary": "Update PEP and Sanctions compliance screening",
+                "parameters": [
+                    {
+                        "description": "Screening details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/kychandler.ComplianceScreeningRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Compliance updated",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/kyc/status": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns current KYC level (0-3), transaction limits, unlocked features, and verification state.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "KYC"
+                ],
+                "summary": "Get user KYC tier and status",
+                "responses": {
+                    "200": {
+                        "description": "KYC status retrieved",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/kyc/tier1": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Verifies primary identity credentials across African jurisdictions (Nigeria BVN/NIN, Ghana Card, Kenya KRA PIN, South Africa ID) to upgrade account limits.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "KYC"
+                ],
+                "summary": "Submit Tier 1 KYC (Pan-African Identity: BVN, NIN, Ghana Card, KRA PIN, SA ID)",
+                "parameters": [
+                    {
+                        "description": "Identity document details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/kychandler.SubmitTier1Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upgraded to Tier 1",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Verification failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/kyc/tier2": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submits official ID and selfie to unlock USD/EUR/GBP accounts and card issuance.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "KYC"
+                ],
+                "summary": "Submit Tier 2 KYC (Government Photo ID \u0026 Facial Liveness)",
+                "parameters": [
+                    {
+                        "description": "Government ID details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/kychandler.SubmitTier2Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upgraded to Tier 2",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Verification failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/kyc/tier3": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Submits utility bill / bank statement for unlimited cross-border volume and institutional limits.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "KYC"
+                ],
+                "summary": "Submit Tier 3 KYC (Proof of Address)",
+                "parameters": [
+                    {
+                        "description": "Address Proof",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/kychandler.SubmitTier3Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upgraded to Tier 3",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Verification failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -7735,808 +2421,6 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/seed/admins": {
-            "post": {
-                "description": "Batch registers roles for admins from formatted JSON data",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Seed"
-                ],
-                "summary": "Seed admins and party admins",
-                "parameters": [
-                    {
-                        "description": "List of admins to seed",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/seedservice.SeedAdminsRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Admins seeded successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to seed admins",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/seed/elections/{id}/simulate-results": {
-            "post": {
-                "description": "Populates mock consensus final results for all eligible polling units of an election with optional party target vote shares and triggers rollups",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Seed"
-                ],
-                "summary": "Simulate election polling unit results",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Election ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Simulation options including optional party target vote shares",
-                        "name": "request",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/seedhandler.SimulateElectionRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Results simulated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to simulate election results",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/seed/flush-redis": {
-            "post": {
-                "description": "Clears and flushes all application-managed keys from Redis cache using pipelines",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Seed"
-                ],
-                "summary": "Flush Redis Cache",
-                "responses": {
-                    "200": {
-                        "description": "Redis database cleared successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to flush Redis",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/seed/users": {
-            "post": {
-                "description": "Batch registers testing users from formatted JSON data",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Seed"
-                ],
-                "summary": "Seed testing users",
-                "parameters": [
-                    {
-                        "description": "List of users to seed",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/seedservice.SeedUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Users seeded successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to seed users",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/senatorial-districts": {
-            "get": {
-                "description": "Fetches senatorial districts with optional stateID filtering and cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Senatorial Districts"
-                ],
-                "summary": "Get senatorial districts",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "State ID to filter by",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/senatorialdistrictshandler.GetSenatorialDistrictsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a senatorial district under a specific state",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Senatorial Districts"
-                ],
-                "summary": "Create a new senatorial district",
-                "parameters": [
-                    {
-                        "description": "Create request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/senatorialdistrictshandler.CreateSenatorialDistrictRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Senatorial district created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/senatorial-districts/{id}": {
-            "get": {
-                "description": "Retrieves details of a single senatorial district using its unique database ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Senatorial Districts"
-                ],
-                "summary": "Get a senatorial district by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Senatorial district fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Senatorial district not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies the details of an existing senatorial district",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Senatorial Districts"
-                ],
-                "summary": "Update a senatorial district",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/senatorialdistrictshandler.UpdateSenatorialDistrictRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Senatorial district updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Senatorial district not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes a senatorial district from the database by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Senatorial Districts"
-                ],
-                "summary": "Delete a senatorial district",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Senatorial District ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Senatorial district deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Senatorial district not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/state-assembly-constituencies": {
-            "post": {
-                "description": "Creates a state assembly constituency under state, district, fed constituency, and LGA",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "State Assembly Constituencies"
-                ],
-                "summary": "Create a new state assembly constituency",
-                "parameters": [
-                    {
-                        "description": "Create request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/stateassemblyconstituencieshandler.CreateStateConstituencyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "State assembly constituency created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/state-assembly-constituencies/{id}": {
-            "get": {
-                "description": "Retrieves details of a single state assembly constituency using its unique database ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "State Assembly Constituencies"
-                ],
-                "summary": "Get a state assembly constituency by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "State Assembly Constituency ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "State assembly constituency fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "State assembly constituency not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies the details of an existing state assembly constituency",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "State Assembly Constituencies"
-                ],
-                "summary": "Update a state assembly constituency",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "State Assembly Constituency ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/stateassemblyconstituencieshandler.UpdateStateConstituencyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "State assembly constituency updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "State assembly constituency not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Removes a state assembly constituency from the database by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "State Assembly Constituencies"
-                ],
-                "summary": "Delete a state assembly constituency",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "State Assembly Constituency ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "State assembly constituency deleted successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "State assembly constituency not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/state-constituencies": {
-            "get": {
-                "description": "Fetches state constituencies with optional state_id and federal_constituency_id filtering and cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "State Assembly Constituencies"
-                ],
-                "summary": "Get state constituencies",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "State ID to filter by",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Federal Constituency ID to filter by",
-                        "name": "federal_constituency_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/stateassemblyconstituencieshandler.GetStateConstituenciesResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
                         }
                     }
                 }
@@ -8800,152 +2684,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/states/{stateID}/cities": {
-            "get": {
-                "description": "Fetches all cities for a specific state by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bodies"
-                ],
-                "summary": "Get cities by state ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "State ID",
-                        "name": "stateID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/bodieshandler.GetCitiesResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/user_preferences": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Fetches the sidebar state, pinned links, and theme for the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User Preferences"
-                ],
-                "summary": "Get user preferences",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Updates the sidebar state, pinned links, or theme for the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User Preferences"
-                ],
-                "summary": "Update user preferences",
-                "parameters": [
-                    {
-                        "description": "Preferences Payload",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/usersservice.UpdateUserPreferencesParams"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
         "/users": {
             "get": {
                 "security": [
@@ -9006,7 +2744,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Fetches the profile details of the currently authenticated user",
+                "description": "Fetches the profile of the currently authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -9034,6 +2772,60 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/onboarding": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates user profile with personal information and address during onboarding",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Save Onboarding Profile",
+                "parameters": [
+                    {
+                        "description": "Onboarding profile details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authhandler.SaveOnboardingProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -9082,114 +2874,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/me/wallet": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns the virtual account details and current balance (in Kobo) for the logged-in user.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Get current user's wallet",
-                "responses": {
-                    "200": {
-                        "description": "Wallet fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Wallet not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/users/me/wallet/transactions": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns a paginated list of credit/debit transactions for the logged-in user's wallet, ordered newest first.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "List current user's wallet transactions",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Number of results (default 20, max 100)",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Offset for pagination (default 0)",
-                        "name": "offset",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Transactions fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Wallet not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/users/me/wallet/withdraw": {
+        "/users/phone/otp": {
             "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Debits the user's wallet balance and records a withdrawal transaction.",
+                "description": "Sends a 6-digit OTP to the user's phone via SMS or WhatsApp",
                 "consumes": [
                     "application/json"
                 ],
@@ -9197,30 +2889,30 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Auth"
                 ],
-                "summary": "Withdraw from current user's wallet",
+                "summary": "Send Phone OTP",
                 "parameters": [
                     {
-                        "description": "Withdrawal payload",
+                        "description": "Phone OTP request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/usershandler.UserWithdrawRequest"
+                            "$ref": "#/definitions/authhandler.SendPhoneOTPRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Withdrawal recorded",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Invalid payload",
+                        "description": "Bad Request",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -9232,16 +2924,164 @@ const docTemplate = `{
                             "type": "object",
                             "additionalProperties": true
                         }
-                    },
-                    "402": {
-                        "description": "Insufficient funds",
+                    }
+                }
+            }
+        },
+        "/users/phone/verify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Verifies the 6-digit phone OTP and marks the phone as verified",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify Phone OTP",
+                "parameters": [
+                    {
+                        "description": "Verify Phone OTP request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authhandler.VerifyPhoneOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
-                    "404": {
-                        "description": "Wallet not found",
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users/pin/set": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets a 4-digit transaction PIN for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Set transaction PIN",
+                "parameters": [
+                    {
+                        "description": "Transaction PIN",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pinhandler.SetPINRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users/pin/verify": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Verifies a 4-digit transaction PIN for the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verify transaction PIN",
+                "parameters": [
+                    {
+                        "description": "Transaction PIN",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/pinhandler.VerifyPINRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -9311,29 +3151,38 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/wallets/provision-missing": {
-            "post": {
-                "description": "Iterates over all existing users and provisions a Monnify reserved account wallet for any user that currently lacks one. Used primarily for testing and manual recovery.",
-                "consumes": [
-                    "application/json"
+        "/wallets": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
+                "description": "Returns all user multi-currency accounts (NGN, USD, GBP, EUR)",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Wallets"
                 ],
-                "summary": "Provision missing wallets for users",
+                "summary": "Get user wallets",
                 "responses": {
                     "200": {
-                        "description": "Provisioning details",
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -9342,188 +3191,32 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/wallet": {
-            "post": {
-                "description": "Manually provisions a Monnify reserved virtual account for a user that does not yet have a wallet.",
-                "consumes": [
-                    "application/json"
+        "/wallets/ledger/transactions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
+                "description": "Returns immutable double-entry ledger transaction history for user's accounts",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "Wallets"
                 ],
-                "summary": "Create a wallet for a user (admin / recovery)",
+                "summary": "Get double-entry ledger transactions",
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "User Fake ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Wallet created",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "409": {
-                        "description": "Wallet already exists",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/verifications/types": {
-            "get": {
-                "description": "List verification types",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Page Verifications"
-                ],
-                "summary": "List verification types",
-                "responses": {
-                    "200": {
-                        "description": "Verification types fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to fetch verification types",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/verifications/{pageType}/{pageID}": {
-            "get": {
-                "description": "Get verifications for a page",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Page Verifications"
-                ],
-                "summary": "Get verifications for a page",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Page Type",
-                        "name": "pageType",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page ID",
-                        "name": "pageID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Verifications fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid page ID",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to fetch verifications",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/wards": {
-            "get": {
-                "description": "Fetches wards with optional lga_id and state_id filtering and cursor pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Wards"
-                ],
-                "summary": "Get wards",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "LGA ID to filter by",
-                        "name": "lga_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "State ID to filter by",
-                        "name": "state_id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Limit (default 20, max 100)",
+                        "description": "Number of records (default 20, max 100)",
                         "name": "limit",
                         "in": "query"
                     },
                     {
-                        "type": "string",
-                        "description": "Cursor (ID of last record)",
-                        "name": "cursor",
+                        "type": "integer",
+                        "description": "Offset for pagination (default 0)",
+                        "name": "offset",
                         "in": "query"
                     }
                 ],
@@ -9531,51 +3224,6 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/wardshandler.GetWardsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Creates a ward under state and LGA",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Wards"
-                ],
-                "summary": "Create a new ward",
-                "parameters": [
-                    {
-                        "description": "Create request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/wardshandler.CreateWardRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Ward created successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request payload or missing fields",
-                        "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
@@ -9587,15 +3235,8 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
                     "500": {
-                        "description": "Internal server error",
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -9604,99 +3245,33 @@ const docTemplate = `{
                 }
             }
         },
-        "/wards/{id}": {
+        "/wallets/{currency}": {
             "get": {
-                "description": "Retrieves details of a single ward using its unique database ID",
-                "consumes": [
-                    "application/json"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
+                "description": "Returns specific currency wallet details",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Wards"
+                    "Wallets"
                 ],
-                "summary": "Get a ward by ID",
+                "summary": "Get wallet by currency",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "Ward ID",
-                        "name": "id",
+                        "type": "string",
+                        "description": "Currency Code (NGN, USD, GBP, EUR)",
+                        "name": "currency",
                         "in": "path",
                         "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Ward fetched successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Ward not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Modifies the details of an existing ward",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Wards"
-                ],
-                "summary": "Update a ward",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Ward ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update request payload",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/wardshandler.UpdateWardRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Ward updated successfully",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid payload or ID parameter",
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -9709,31 +3284,19 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
                     "404": {
-                        "description": "Ward not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     }
                 }
-            },
-            "delete": {
-                "description": "Removes a ward from the database by its ID",
+            }
+        },
+        "/webhooks/paystack": {
+            "post": {
+                "description": "Receives and processes Paystack payment notification events. Verifies the HMAC-SHA512 signature in x-paystack-signature.",
                 "consumes": [
                     "application/json"
                 ],
@@ -9741,56 +3304,19 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Wards"
+                    "Webhooks"
                 ],
-                "summary": "Delete a ward",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Ward ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
+                "summary": "Paystack payment webhook",
                 "responses": {
                     "200": {
-                        "description": "Ward deleted successfully",
+                        "description": "Event processed",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Invalid ID parameter",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden (Admin only)",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Ward not found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
+                        "description": "Invalid signature or payload",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -9916,22 +3442,16 @@ const docTemplate = `{
                 }
             }
         },
-        "authhandler.LoginRequest": {
+        "authhandler.LoginCredentialsRequest": {
             "type": "object",
             "required": [
-                "country",
                 "identifier",
-                "identifierType",
                 "password"
             ],
             "properties": {
-                "country": {
-                    "type": "string"
-                },
                 "identifier": {
-                    "description": "accepts email, username or phone",
                     "type": "string",
-                    "maxLength": 50,
+                    "maxLength": 100,
                     "minLength": 2
                 },
                 "identifierType": {
@@ -9948,6 +3468,21 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "minLength": 4
+                }
+            }
+        },
+        "authhandler.LoginPinRequest": {
+            "type": "object",
+            "required": [
+                "pin",
+                "preAuthToken"
+            ],
+            "properties": {
+                "pin": {
+                    "type": "string"
+                },
+                "preAuthToken": {
+                    "type": "string"
                 }
             }
         },
@@ -10006,36 +3541,6 @@ const docTemplate = `{
                 }
             }
         },
-        "authhandler.PartyLoginRequest": {
-            "type": "object",
-            "required": [
-                "identifier",
-                "identifierType",
-                "password"
-            ],
-            "properties": {
-                "identifier": {
-                    "type": "string",
-                    "maxLength": 50,
-                    "minLength": 2
-                },
-                "identifierType": {
-                    "type": "string",
-                    "enum": [
-                        "email",
-                        "username",
-                        "phone"
-                    ]
-                },
-                "iso2": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string",
-                    "minLength": 4
-                }
-            }
-        },
         "authhandler.RefreshRequest": {
             "type": "object",
             "properties": {
@@ -10044,77 +3549,94 @@ const docTemplate = `{
                 }
             }
         },
-        "authhandler.RegisterCandidatePlaceholderRequest": {
+        "authhandler.SaveOnboardingProfileRequest": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string",
+                    "example": "Ikeja"
+                },
+                "countryCode": {
+                    "type": "string",
+                    "example": "NG"
+                },
+                "countryId": {
+                    "type": "integer",
+                    "example": 161
+                },
+                "dateOfBirth": {
+                    "type": "string",
+                    "example": "1998-05-14"
+                },
+                "firstName": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2,
+                    "example": "Daniel"
+                },
+                "lastName": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 2,
+                    "example": "Chukwu"
+                },
+                "middleName": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "example": "Kalu"
+                },
+                "postalCode": {
+                    "type": "string",
+                    "example": "100001"
+                },
+                "referralCode": {
+                    "type": "string",
+                    "example": "CHIPA123"
+                },
+                "referralSource": {
+                    "type": "string",
+                    "example": "Social Media"
+                },
+                "state": {
+                    "type": "string",
+                    "example": "Lagos"
+                },
+                "streetAddress": {
+                    "type": "string",
+                    "example": "14 Admiralty Way"
+                }
+            }
+        },
+        "authhandler.SendPhoneOTPRequest": {
             "type": "object",
             "required": [
-                "current_country",
-                "current_state",
-                "date_of_birth",
-                "first_name",
-                "gender",
-                "last_name",
-                "password"
+                "channel",
+                "phoneNumber"
             ],
             "properties": {
-                "avatar": {
-                    "type": "string"
-                },
-                "avatar_file_id": {
-                    "type": "integer"
-                },
-                "current_city": {
-                    "type": "integer"
-                },
-                "current_country": {
-                    "type": "integer"
-                },
-                "current_state": {
-                    "type": "integer"
-                },
-                "date_of_birth": {
-                    "description": "Expects YYYY-MM-DD",
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string",
-                    "maxLength": 30,
-                    "minLength": 2
-                },
-                "gender": {
+                "channel": {
                     "type": "string",
                     "enum": [
-                        "male",
-                        "female"
+                        "sms",
+                        "whatsapp"
                     ]
                 },
-                "last_name": {
-                    "type": "string",
-                    "maxLength": 30,
-                    "minLength": 2
+                "iso2": {
+                    "type": "string"
                 },
-                "middle_name": {
-                    "type": "string",
-                    "maxLength": 30,
-                    "minLength": 2
-                },
-                "party_id": {
-                    "type": "integer"
-                },
-                "password": {
-                    "type": "string",
-                    "maxLength": 72,
-                    "minLength": 5
-                },
-                "state_of_origin": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string",
-                    "maxLength": 30,
-                    "minLength": 3
+                "phoneNumber": {
+                    "type": "string"
+                }
+            }
+        },
+        "authhandler.SendSignupEmailOTPRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
                 }
             }
         },
@@ -10124,597 +3646,138 @@ const docTemplate = `{
                 "countryId",
                 "email",
                 "password",
-                "phoneNumber"
+                "verificationCode"
             ],
             "properties": {
                 "countryId": {
-                    "type": "integer"
+                    "type": "integer",
+                    "example": 161
                 },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "user@example.com"
                 },
                 "password": {
                     "type": "string",
                     "maxLength": 72,
-                    "minLength": 5
+                    "minLength": 5,
+                    "example": "SecurePassword123!"
+                },
+                "verificationCode": {
+                    "type": "string",
+                    "example": "123456"
+                }
+            }
+        },
+        "authhandler.VerifyPhoneOTPRequest": {
+            "type": "object",
+            "required": [
+                "otp",
+                "phoneNumber"
+            ],
+            "properties": {
+                "iso2": {
+                    "type": "string"
+                },
+                "otp": {
+                    "type": "string"
                 },
                 "phoneNumber": {
                     "type": "string"
                 }
             }
         },
-        "bodieshandler.CityResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "bodieshandler.CountryResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "iso2": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "phone_code": {
-                    "type": "string"
-                }
-            }
-        },
-        "bodieshandler.GetCitiesData": {
-            "type": "object",
-            "properties": {
-                "cities": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/bodieshandler.CityResponse"
-                    }
-                }
-            }
-        },
-        "bodieshandler.GetCitiesResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/bodieshandler.GetCitiesData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/bodieshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "bodieshandler.GetCountriesData": {
-            "type": "object",
-            "properties": {
-                "countries": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/bodieshandler.CountryResponse"
-                    }
-                }
-            }
-        },
-        "bodieshandler.GetCountriesResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/bodieshandler.GetCountriesData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "bodieshandler.GetLGAsData": {
-            "type": "object",
-            "properties": {
-                "lgas": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/bodieshandler.LGAResponse"
-                    }
-                }
-            }
-        },
-        "bodieshandler.GetLGAsResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/bodieshandler.GetLGAsData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/bodieshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "bodieshandler.GetStatesData": {
-            "type": "object",
-            "properties": {
-                "states": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/bodieshandler.StateResponse"
-                    }
-                }
-            }
-        },
-        "bodieshandler.GetStatesResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/bodieshandler.GetStatesData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/bodieshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "bodieshandler.LGAResponse": {
-            "type": "object",
-            "properties": {
-                "abbreviation": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "state_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "bodieshandler.PaginationMeta": {
-            "type": "object",
-            "properties": {
-                "has_more": {
-                    "type": "boolean"
-                },
-                "next_cursor": {
-                    "type": "string"
-                }
-            }
-        },
-        "bodieshandler.StateResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "electiongroupshandler.CreateElectionGroupRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "elections_count": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rank": {
-                    "type": "integer"
-                },
-                "states_count": {
-                    "type": "integer"
-                }
-            }
-        },
-        "electiongroupshandler.UpdateElectionGroupRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "elections_count": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rank": {
-                    "type": "integer"
-                },
-                "states_count": {
-                    "type": "integer"
-                }
-            }
-        },
-        "electiongroupshandler.UpsertPartyElectionGroupStatsRequest": {
-            "type": "object",
-            "properties": {
-                "elections_contesting": {
-                    "type": "integer"
-                },
-                "party_id": {
-                    "type": "integer"
-                },
-                "polling_agents_coverage": {}
-            }
-        },
-        "electionshandler.CreateElectionRequest": {
-            "type": "object",
-            "properties": {
-                "candidates_count": {
-                    "type": "integer"
-                },
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "federal_constituency_id": {
-                    "type": "integer"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "office_id": {
-                    "type": "integer"
-                },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "state_constituency_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "ward_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "electionshandler.CreateFederalConstituencyElectionRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "federal_constituency_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "office_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "electionshandler.CreateLgaElectionRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "lga_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "office_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "electionshandler.CreateNationwideElectionRequest": {
-            "type": "object",
-            "properties": {
-                "candidates": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/electionshandler.ElectionCandidateInput"
-                    }
-                },
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "office_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "electionshandler.CreateSenatorialDistrictElectionRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "office_id": {
-                    "type": "integer"
-                },
-                "senatorial_district_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "electionshandler.CreateStateConstituencyElectionRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "office_id": {
-                    "type": "integer"
-                },
-                "state_constituency_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "electionshandler.CreateStateElectionRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "office_id": {
-                    "type": "integer"
-                },
-                "state_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "electionshandler.CreateWardElectionRequest": {
-            "type": "object",
-            "properties": {
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "office_id": {
-                    "type": "integer"
-                },
-                "ward_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "electionshandler.ElectionCandidateInput": {
+        "authhandler.VerifySignupEmailOTPRequest": {
             "type": "object",
             "required": [
-                "candidate_id",
-                "party_id",
-                "party_short_name"
+                "email",
+                "otp"
             ],
             "properties": {
-                "candidate_id": {
-                    "type": "integer"
+                "email": {
+                    "type": "string"
                 },
-                "party_id": {
-                    "type": "integer"
-                },
-                "party_short_name": {
+                "otp": {
                     "type": "string"
                 }
             }
         },
-        "electionshandler.SyncCandidatesRequest": {
+        "cardshandler.CreateCardRequest": {
             "type": "object",
             "properties": {
-                "candidates": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/electionshandler.ElectionCandidateInput"
-                    }
-                }
-            }
-        },
-        "electionshandler.UpdateElectionRequest": {
-            "type": "object",
-            "properties": {
-                "candidates_count": {
-                    "type": "integer"
-                },
-                "election_date": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "federal_constituency_id": {
-                    "type": "integer"
-                },
-                "lga_id": {
-                    "type": "integer"
+                "currency": {
+                    "$ref": "#/definitions/domain.Currency"
                 },
                 "name": {
                     "type": "string"
                 },
-                "office_id": {
-                    "type": "integer"
-                },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "state_constituency_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "ward_id": {
-                    "type": "integer"
+                "scheme": {
+                    "$ref": "#/definitions/domain.CardScheme"
                 }
             }
         },
-        "federalconstituencieshandler.CreateFederalConstituencyRequest": {
+        "cardshandler.FundCardRequest": {
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "string"
+                "amount": {
+                    "type": "number"
                 },
-                "name": {
-                    "type": "string"
+                "from_currency": {
+                    "$ref": "#/definitions/domain.Currency"
                 },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "federalconstituencieshandler.FederalConstituencyResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "senatorial_district_name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "state_name": {
+                "pin": {
                     "type": "string"
                 }
             }
         },
-        "federalconstituencieshandler.GetFederalConstituenciesData": {
-            "type": "object",
-            "properties": {
-                "constituencies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/federalconstituencieshandler.FederalConstituencyResponse"
-                    }
-                }
-            }
+        "domain.CardScheme": {
+            "type": "string",
+            "enum": [
+                "visa",
+                "mastercard"
+            ],
+            "x-enum-varnames": [
+                "CardSchemeVisa",
+                "CardSchemeMastercard"
+            ]
         },
-        "federalconstituencieshandler.GetFederalConstituenciesResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/federalconstituencieshandler.GetFederalConstituenciesData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/federalconstituencieshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
+        "domain.Currency": {
+            "type": "string",
+            "enum": [
+                "NGN",
+                "USD",
+                "GBP",
+                "EUR",
+                "AED",
+                "KWD",
+                "AUD",
+                "USDC"
+            ],
+            "x-enum-varnames": [
+                "CurrencyNGN",
+                "CurrencyUSD",
+                "CurrencyGBP",
+                "CurrencyEUR",
+                "CurrencyAED",
+                "CurrencyKWD",
+                "CurrencyAUD",
+                "CurrencyUSDC"
+            ]
         },
-        "federalconstituencieshandler.PaginationMeta": {
-            "type": "object",
-            "properties": {
-                "has_more": {
-                    "type": "boolean"
-                },
-                "next_cursor": {
-                    "type": "string"
-                }
-            }
-        },
-        "federalconstituencieshandler.UpdateFederalConstituencyRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                }
-            }
+        "domain.VASCategory": {
+            "type": "string",
+            "enum": [
+                "airtime",
+                "data",
+                "electricity",
+                "cable_tv"
+            ],
+            "x-enum-varnames": [
+                "VASCategoryAirtime",
+                "VASCategoryData",
+                "VASCategoryElectricity",
+                "VASCategoryCableTV"
+            ]
         },
         "fileshandler.GenerateUploadURLRequest": {
             "type": "object",
@@ -10739,791 +3802,138 @@ const docTemplate = `{
                 }
             }
         },
-        "inecgrabber.ResolveUnmatchedRequest": {
+        "fxhandler.CreateQuoteRequest": {
             "type": "object",
             "properties": {
-                "notes": {
-                    "type": "string"
+                "from_currency": {
+                    "$ref": "#/definitions/domain.Currency"
                 },
-                "polling_unit_id": {
-                    "type": "integer"
-                },
-                "status": {
-                    "description": "resolved_mapped, resolved_created_pu, rejected",
-                    "type": "string"
-                }
-            }
-        },
-        "officeshandler.CreateOfficeRequest": {
-            "type": "object",
-            "properties": {
-                "election": {
-                    "type": "string"
-                },
-                "inec_election_type_id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rank": {
-                    "type": "integer"
-                },
-                "scope": {
-                    "type": "string"
-                }
-            }
-        },
-        "officeshandler.UpdateOfficeRequest": {
-            "type": "object",
-            "properties": {
-                "election": {
-                    "type": "string"
-                },
-                "inec_election_type_id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "rank": {
-                    "type": "integer"
-                },
-                "scope": {
-                    "type": "string"
-                }
-            }
-        },
-        "pageverificationshandler.AssignVerificationRequest": {
-            "type": "object",
-            "required": [
-                "for_who",
-                "page_id",
-                "verification_type_ids"
-            ],
-            "properties": {
-                "for_who": {
-                    "type": "string"
-                },
-                "page_id": {
-                    "type": "integer"
-                },
-                "verification_type_ids": {
-                    "type": "array",
-                    "minItems": 1,
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "partieshandler.BuySlotsRequest": {
-            "type": "object",
-            "properties": {
-                "quantity": {
-                    "type": "integer"
-                }
-            }
-        },
-        "partieshandler.CreateMarketingCampaignRequest": {
-            "type": "object",
-            "properties": {
-                "budget": {
+                "send_amount": {
                     "type": "number"
                 },
-                "budget_kobo": {
-                    "type": "integer"
-                },
-                "budget_per_day": {
-                    "description": "Support legacy naira fields as fallback if passed",
-                    "type": "number"
-                },
-                "budget_per_day_kobo": {
-                    "type": "integer"
-                },
-                "duration_in_days": {
-                    "type": "integer"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "election_id": {
-                    "type": "integer"
-                },
-                "plan_id": {
-                    "type": "integer"
-                },
-                "states": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "type": {
-                    "type": "string"
+                "to_currency": {
+                    "$ref": "#/definitions/domain.Currency"
                 }
             }
         },
-        "partieshandler.CreatePartyRequest": {
+        "fxhandler.ExecuteSwapRequest": {
             "type": "object",
             "properties": {
-                "color_hex": {
+                "pin": {
                     "type": "string"
                 },
-                "dark_color_hex": {
-                    "type": "string"
-                },
-                "display_order": {
-                    "type": "integer"
-                },
-                "logo": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "short_name": {
+                "quote_id": {
                     "type": "string"
                 }
             }
         },
-        "partieshandler.CreatePlanRequest": {
+        "kychandler.ComplianceScreeningRequest": {
             "type": "object",
             "properties": {
-                "color_hex": {
-                    "type": "string"
+                "is_pep": {
+                    "type": "boolean",
+                    "example": false
                 },
-                "description": {
-                    "type": "string"
+                "sanctions_status": {
+                    "description": "clear, flagged, blocked",
+                    "type": "string",
+                    "example": "clear"
                 },
-                "features": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "price_kobo": {
-                    "type": "integer"
-                },
-                "scopes_recommendation": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "type": {
-                    "type": "string"
+                "tax_id": {
+                    "type": "string",
+                    "example": "A012345678X"
                 }
             }
         },
-        "partieshandler.DepositAllowanceRequest": {
+        "kychandler.SubmitTier1Request": {
             "type": "object",
             "properties": {
-                "amount_kobo": {
-                    "type": "integer"
+                "bvn": {
+                    "type": "string",
+                    "example": "22222222222"
+                },
+                "country_code": {
+                    "type": "string",
+                    "example": "NG"
+                },
+                "document_type": {
+                    "description": "bvn, nin, ghana_card, kra_pin, huduma_namba, sa_id, national_id",
+                    "type": "string",
+                    "example": "bvn"
+                },
+                "id_number": {
+                    "type": "string",
+                    "example": "22222222222"
+                },
+                "nin": {
+                    "type": "string",
+                    "example": "11111111111"
                 }
             }
         },
-        "partieshandler.SetPartyDiscountRequest": {
+        "kychandler.SubmitTier2Request": {
             "type": "object",
             "properties": {
-                "discount_percentage": {
-                    "type": "number"
+                "country_code": {
+                    "type": "string",
+                    "example": "NG"
+                },
+                "document_file_id": {
+                    "type": "string",
+                    "example": "file_id_or_url"
+                },
+                "document_number": {
+                    "type": "string",
+                    "example": "A09871234"
+                },
+                "document_type": {
+                    "description": "passport, national_id, drivers_license, residence_permit",
+                    "type": "string",
+                    "example": "passport"
+                },
+                "selfie_file_id": {
+                    "type": "string",
+                    "example": "selfie_id_or_url"
                 }
             }
         },
-        "partieshandler.SetSlotPriceRequest": {
-            "type": "object",
-            "properties": {
-                "price_kobo": {
-                    "type": "integer"
-                }
-            }
-        },
-        "partieshandler.ToggleVerificationRequest": {
-            "type": "object",
-            "properties": {
-                "is_verified": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "partieshandler.UpdateAgentTargetsRequest": {
-            "type": "object",
-            "properties": {
-                "lga_election_supervisor": {
-                    "type": "integer"
-                },
-                "polling_agent": {
-                    "type": "integer"
-                },
-                "state_election_supervisor": {
-                    "type": "integer"
-                },
-                "ward_election_supervisor": {
-                    "type": "integer"
-                }
-            }
-        },
-        "partieshandler.UpdatePartyRequest": {
-            "type": "object",
-            "properties": {
-                "color_hex": {
-                    "type": "string"
-                },
-                "dark_color_hex": {
-                    "type": "string"
-                },
-                "display_order": {
-                    "type": "integer"
-                },
-                "logo": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "short_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "partieshandler.UpdatePlanDisplayOrderRequest": {
-            "type": "object",
-            "properties": {
-                "display_order": {
-                    "type": "integer"
-                }
-            }
-        },
-        "partieshandler.UpdatePlanRequest": {
-            "type": "object",
-            "properties": {
-                "color_hex": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "features": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "is_active": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                },
-                "price_kobo": {
-                    "type": "integer"
-                },
-                "scopes_recommendation": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "partieshandler.WithdrawRequest": {
-            "type": "object",
-            "properties": {
-                "amount_kobo": {
-                    "description": "AmountKobo is the withdrawal amount in Kobo (1 NGN = 100 Kobo).",
-                    "type": "integer"
-                },
-                "bank_account_number": {
-                    "type": "string"
-                },
-                "bank_code": {
-                    "type": "string"
-                },
-                "narration": {
-                    "type": "string"
-                }
-            }
-        },
-        "partieshandler.agentPaymentAllocation": {
-            "type": "object",
-            "properties": {
-                "lga_election_supervisor": {
-                    "$ref": "#/definitions/partieshandler.agentPaymentConfig"
-                },
-                "polling_agent": {
-                    "$ref": "#/definitions/partieshandler.agentPaymentConfig"
-                },
-                "state_election_supervisor": {
-                    "$ref": "#/definitions/partieshandler.agentPaymentConfig"
-                },
-                "ward_election_supervisor": {
-                    "$ref": "#/definitions/partieshandler.agentPaymentConfig"
-                }
-            }
-        },
-        "partieshandler.agentPaymentConfig": {
-            "type": "object",
-            "properties": {
-                "default": {
-                    "type": "integer"
-                },
-                "states": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer",
-                        "format": "int64"
-                    }
-                }
-            }
-        },
-        "partyapplicationshandler.ApproveApplicationRequest": {
-            "type": "object",
-            "properties": {
-                "lga_id": {
-                    "type": "integer"
-                },
-                "polling_unit_id": {
-                    "type": "integer"
-                },
-                "role_type": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "ward_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "partyapplicationshandler.RejectApplicationRequest": {
-            "type": "object",
-            "properties": {
-                "reason": {
-                    "type": "string"
-                }
-            }
-        },
-        "partyapplicationshandler.SubmitApplicationRequest": {
+        "kychandler.SubmitTier3Request": {
             "type": "object",
             "properties": {
                 "address": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "12 Admiralty Way, Lekki Phase 1"
                 },
-                "avatar": {
-                    "type": "string"
+                "city": {
+                    "type": "string",
+                    "example": "Lagos"
                 },
-                "bank_account_number": {
-                    "type": "string"
+                "country_code": {
+                    "type": "string",
+                    "example": "NG"
                 },
-                "bank_code": {
-                    "type": "string"
+                "state": {
+                    "type": "string",
+                    "example": "Lagos"
                 },
-                "current_city": {
-                    "type": "integer"
-                },
-                "current_country": {
-                    "type": "integer"
-                },
-                "current_lga": {
-                    "type": "integer"
-                },
-                "current_state": {
-                    "type": "integer"
-                },
-                "current_ward": {
-                    "type": "integer"
-                },
-                "educational_status": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "election_group_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "graduation_year": {
-                    "type": "string"
-                },
-                "highest_degree": {
-                    "type": "string"
-                },
-                "party_id": {
-                    "type": "integer"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "polling_unit_id": {
-                    "type": "integer"
-                },
-                "school_name": {
-                    "type": "string"
-                },
-                "voters_card_image": {
-                    "type": "string"
-                },
-                "whatsapp_phone": {
+                "utility_bill_file_id": {
+                    "type": "string",
+                    "example": "utility_file_id"
+                }
+            }
+        },
+        "pinhandler.SetPINRequest": {
+            "type": "object",
+            "properties": {
+                "pin": {
                     "type": "string"
                 }
             }
         },
-        "partyapplicationshandler.SubmitSupervisorApplicationRequest": {
+        "pinhandler.VerifyPINRequest": {
             "type": "object",
             "properties": {
-                "degree_certificate_url": {
-                    "type": "string"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "ward_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "polling_unit_updates.CreateUpdateRequest": {
-            "type": "object",
-            "properties": {
-                "assignment_id": {
-                    "type": "integer"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "is_report": {
-                    "type": "boolean"
-                },
-                "media_urls": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "message": {
-                    "type": "string"
-                },
-                "party_id": {
-                    "type": "integer"
-                },
-                "polling_unit_id": {
-                    "type": "integer"
-                },
-                "report_types": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "pollingunitshandler.CreatePollingUnitRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "formatted_address": {
-                    "type": "string"
-                },
-                "google_place_id": {
-                    "type": "string"
-                },
-                "latitude": {
-                    "type": "number"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "longitude": {
-                    "type": "number"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "precise_location": {
-                    "type": "string"
-                },
-                "pu_code": {
-                    "type": "string"
-                },
-                "registration_area_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "ward_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "pollingunitshandler.GetPollingUnitsData": {
-            "type": "object",
-            "properties": {
-                "polling_units": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/pollingunitshandler.PollingUnitResponse"
-                    }
-                }
-            }
-        },
-        "pollingunitshandler.GetPollingUnitsResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/pollingunitshandler.GetPollingUnitsData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/pollingunitshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "pollingunitshandler.PaginationMeta": {
-            "type": "object",
-            "properties": {
-                "has_more": {
-                    "type": "boolean"
-                },
-                "next_cursor": {
-                    "type": "string"
-                }
-            }
-        },
-        "pollingunitshandler.PollingUnitResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "formatted_address": {
-                    "type": "string"
-                },
-                "google_place_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "latitude": {
-                    "type": "number"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "lga_name": {
-                    "type": "string"
-                },
-                "longitude": {
-                    "type": "number"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "precise_location": {
-                    "type": "string"
-                },
-                "pu_code": {
-                    "type": "string"
-                },
-                "registration_area_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "state_name": {
-                    "type": "string"
-                },
-                "ward_id": {
-                    "type": "integer"
-                },
-                "ward_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "pollingunitshandler.UpdatePollingUnitRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "formatted_address": {
-                    "type": "string"
-                },
-                "google_place_id": {
-                    "type": "string"
-                },
-                "latitude": {
-                    "type": "number"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "longitude": {
-                    "type": "number"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "precise_location": {
-                    "type": "string"
-                },
-                "pu_code": {
-                    "type": "string"
-                },
-                "registration_area_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "ward_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "practicetestshandler.PracticeTestResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "earned_amount_kobo": {
-                    "type": "integer"
-                },
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "overall_score": {
-                    "type": "number"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "test_attempts": {},
-                "updated_at": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "practicetestshandler.SubmitPracticeTestRequest": {
-            "type": "object",
-            "properties": {
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "final_score": {
-                    "type": "number"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "task_stats": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/practicetestshandler.TaskStat"
-                    }
-                }
-            }
-        },
-        "practicetestshandler.TaskStat": {
-            "type": "object",
-            "properties": {
-                "completed": {
-                    "type": "boolean"
-                },
-                "failed_attempts": {
-                    "type": "integer"
-                },
-                "score": {
-                    "type": "number"
-                },
-                "task_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "puassignmentshandler.CreateAssignmentRequest": {
-            "type": "object",
-            "properties": {
-                "election_group_id": {
-                    "type": "integer"
-                },
-                "fake_id": {
-                    "type": "integer"
-                },
-                "party_id": {
-                    "type": "integer"
-                },
-                "polling_unit_id": {
-                    "type": "integer"
-                },
-                "role_type": {
-                    "type": "string"
-                }
-            }
-        },
-        "puassignmentshandler.UpdateAssignmentTrackingRequest": {
-            "type": "object",
-            "properties": {
-                "arrival_video_url": {
-                    "type": "string"
-                },
-                "arrived_at": {
-                    "type": "string"
-                },
-                "election_ended_at": {
-                    "type": "string"
-                },
-                "election_ended_video_url": {
-                    "type": "string"
-                },
-                "election_started_at": {
-                    "type": "string"
-                },
-                "election_started_video_url": {
+                "pin": {
                     "type": "string"
                 }
             }
@@ -11568,397 +3978,6 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
-                }
-            }
-        },
-        "seedhandler.SimulateElectionRequest": {
-            "type": "object",
-            "properties": {
-                "limit": {
-                    "type": "integer",
-                    "example": 1000
-                },
-                "max_votes_per_pu": {
-                    "type": "integer",
-                    "example": 750
-                },
-                "min_votes_per_pu": {
-                    "type": "integer",
-                    "example": 100
-                },
-                "party_shares": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/seedhandler.SimulatePartyShare"
-                    }
-                },
-                "run_full_rollup": {
-                    "type": "boolean"
-                },
-                "trigger_realtime": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "seedhandler.SimulatePartyShare": {
-            "type": "object",
-            "properties": {
-                "party_short_name": {
-                    "type": "string",
-                    "example": "APC"
-                },
-                "vote_share": {
-                    "type": "number",
-                    "example": 35
-                }
-            }
-        },
-        "seedservice.PartyAdminsData": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "description": "partyID",
-                    "type": "integer"
-                },
-                "party_admin": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "super_party_admin": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "seedservice.SeedAdminsRequest": {
-            "type": "object",
-            "properties": {
-                "admins": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "parties": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "$ref": "#/definitions/seedservice.PartyAdminsData"
-                        }
-                    }
-                },
-                "super_admins": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                }
-            }
-        },
-        "seedservice.SeedUserRequest": {
-            "type": "object",
-            "properties": {
-                "account_status": {
-                    "type": "string"
-                },
-                "avatar": {
-                    "type": "string"
-                },
-                "current_city": {
-                    "type": "integer"
-                },
-                "current_country": {
-                    "type": "integer"
-                },
-                "current_lga": {
-                    "type": "integer"
-                },
-                "current_state": {
-                    "type": "integer"
-                },
-                "date_of_birth": {
-                    "type": "string"
-                },
-                "education_level": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "first_name": {
-                    "type": "string"
-                },
-                "gender": {
-                    "type": "string"
-                },
-                "home_address": {
-                    "type": "string"
-                },
-                "is_politician": {
-                    "type": "boolean"
-                },
-                "is_verified": {
-                    "type": "boolean"
-                },
-                "last_name": {
-                    "type": "string"
-                },
-                "marital_status": {
-                    "type": "string"
-                },
-                "middle_name": {
-                    "type": "string"
-                },
-                "num": {
-                    "type": "integer"
-                },
-                "occupation_id": {
-                    "type": "integer"
-                },
-                "party_id": {
-                    "type": "integer"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "phone": {
-                    "type": "string"
-                },
-                "religion": {
-                    "type": "string"
-                },
-                "state_of_origin": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string"
-                },
-                "verification_type_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "senatorialdistrictshandler.CreateSenatorialDistrictRequest": {
-            "type": "object",
-            "properties": {
-                "coalition_center": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "senatorialdistrictshandler.GetSenatorialDistrictsData": {
-            "type": "object",
-            "properties": {
-                "districts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/senatorialdistrictshandler.SenatorialDistrictResponse"
-                    }
-                }
-            }
-        },
-        "senatorialdistrictshandler.GetSenatorialDistrictsResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/senatorialdistrictshandler.GetSenatorialDistrictsData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/senatorialdistrictshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "senatorialdistrictshandler.PaginationMeta": {
-            "type": "object",
-            "properties": {
-                "has_more": {
-                    "type": "boolean"
-                },
-                "next_cursor": {
-                    "type": "string"
-                }
-            }
-        },
-        "senatorialdistrictshandler.SenatorialDistrictResponse": {
-            "type": "object",
-            "properties": {
-                "coalition_center": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "state_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "senatorialdistrictshandler.UpdateSenatorialDistrictRequest": {
-            "type": "object",
-            "properties": {
-                "coalition_center": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "stateassemblyconstituencieshandler.CreateStateConstituencyRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "federal_constituency_id": {
-                    "type": "integer"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "stateassemblyconstituencieshandler.GetStateConstituenciesData": {
-            "type": "object",
-            "properties": {
-                "constituencies": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/stateassemblyconstituencieshandler.StateConstituencyResponse"
-                    }
-                }
-            }
-        },
-        "stateassemblyconstituencieshandler.GetStateConstituenciesResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/stateassemblyconstituencieshandler.GetStateConstituenciesData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/stateassemblyconstituencieshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "stateassemblyconstituencieshandler.PaginationMeta": {
-            "type": "object",
-            "properties": {
-                "has_more": {
-                    "type": "boolean"
-                },
-                "next_cursor": {
-                    "type": "string"
-                }
-            }
-        },
-        "stateassemblyconstituencieshandler.StateConstituencyResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "federal_constituency_id": {
-                    "type": "integer"
-                },
-                "federal_constituency_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "senatorial_district_name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "state_name": {
-                    "type": "string"
-                }
-            }
-        },
-        "stateassemblyconstituencieshandler.UpdateStateConstituencyRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "federal_constituency_id": {
-                    "type": "integer"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "senatorial_district_id": {
-                    "type": "integer"
-                },
-                "state_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -12122,23 +4141,6 @@ const docTemplate = `{
                     }
                 },
                 "user_fid": {
-                    "type": "integer"
-                }
-            }
-        },
-        "usershandler.UserWithdrawRequest": {
-            "type": "object",
-            "properties": {
-                "amount_kobo": {
-                    "type": "integer"
-                },
-                "bank_account_number": {
-                    "type": "string"
-                },
-                "bank_code": {
-                    "type": "string"
-                },
-                "narration": {
                     "type": "string"
                 }
             }
@@ -12162,26 +4164,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "raw_input": {
-                    "type": "string"
-                }
-            }
-        },
-        "usersservice.UpdateUserPreferencesParams": {
-            "type": "object",
-            "properties": {
-                "pinned_links": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "sidebar_state": {
-                    "type": "string"
-                },
-                "theme": {
                     "type": "string"
                 }
             }
@@ -12217,101 +4199,36 @@ const docTemplate = `{
                 }
             }
         },
-        "wardshandler.CreateWardRequest": {
+        "vashandler.PayBillRequest": {
             "type": "object",
             "properties": {
-                "code": {
+                "amount": {
+                    "type": "number"
+                },
+                "category": {
+                    "$ref": "#/definitions/domain.VASCategory"
+                },
+                "operator": {
                     "type": "string"
                 },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "name": {
+                "pin": {
                     "type": "string"
                 },
-                "state_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "wardshandler.GetWardsData": {
-            "type": "object",
-            "properties": {
-                "wards": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/wardshandler.WardResponse"
-                    }
-                }
-            }
-        },
-        "wardshandler.GetWardsResponse": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "$ref": "#/definitions/wardshandler.GetWardsData"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "meta": {
-                    "$ref": "#/definitions/wardshandler.PaginationMeta"
-                },
-                "success": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "wardshandler.PaginationMeta": {
-            "type": "object",
-            "properties": {
-                "has_more": {
-                    "type": "boolean"
-                },
-                "next_cursor": {
+                "recipient": {
                     "type": "string"
                 }
             }
         },
-        "wardshandler.UpdateWardRequest": {
+        "vashandler.ValidateRequest": {
             "type": "object",
             "properties": {
-                "code": {
+                "category": {
+                    "$ref": "#/definitions/domain.VASCategory"
+                },
+                "operator": {
                     "type": "string"
                 },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "wardshandler.WardResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "lga_id": {
-                    "type": "integer"
-                },
-                "lga_name": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "state_id": {
-                    "type": "integer"
-                },
-                "state_name": {
+                "recipient": {
                     "type": "string"
                 }
             }
@@ -12339,8 +4256,8 @@ var SwaggerInfo = &swag.Spec{
 	Host:             "localhost:4100",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
-	Title:            "Free9ja API",
-	Description:      "API for the Free9ja platform.",
+	Title:            "Chipa API",
+	Description:      "Multi-currency fintech API for Chipa platform.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

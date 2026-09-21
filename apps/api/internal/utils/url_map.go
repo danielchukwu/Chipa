@@ -12,7 +12,6 @@ type AuthURLMap struct {
 	Logout                string
 	Refresh               string
 	AdminLogin            string
-	PartyLogin            string
 	ChangePasswordByEmail string
 	SuperAdmin            string
 }
@@ -58,7 +57,6 @@ var ApiUrls = URLMap{
 		Logout:                "/api/v1/auth/logout",
 		Refresh:               "/api/v1/auth/refresh",
 		AdminLogin:            "/api/v1/auth/admin/login",
-		PartyLogin:            "/api/v1/auth/partyapp/login",
 		ChangePasswordByEmail: "/api/v1/auth/change_password_by_email",
 		SuperAdmin:            "/api/v1/auth/superadmin",
 	},

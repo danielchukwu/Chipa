@@ -35,18 +35,14 @@ import (
 )
 
 type UsersService interface {
-	GetUserByFakeID(ctx context.Context, fakeID int64) (queries.UserWithPlaces, error)
-	ResetUserAvatar(ctx context.Context, userID int64, fakeID int64) error
-}
-
-type PartiesService interface {
-	InvalidatePartyCache(ctx context.Context, partyID int16)
+	GetUserByFakeID(ctx context.Context, fakeID string) (queries.UserWithPlaces, error)
+	ResetUserAvatar(ctx context.Context, userID int64, fakeID string) error
 }
 
 // FilesDB is the narrow interface for file-related database operations.
 // Satisfied by *queries.Queries, but mockable in tests.
 type FilesDB interface {
-	GetUserByFakeID(ctx context.Context, fakeID pgtype.Int8) (queries.GetUserByFakeIDRow, error)
+	GetUserByFakeID(ctx context.Context, fakeID string) (queries.GetUserByFakeIDRow, error)
 	UpdateUserAvatar(ctx context.Context, arg queries.UpdateUserAvatarParams) error
 	CreateFile(ctx context.Context, arg queries.CreateFileParams) (queries.File, error)
 	ConfirmUpload(ctx context.Context, arg queries.ConfirmUploadParams) (queries.File, error)
@@ -56,25 +52,22 @@ type FilesDB interface {
 	MarkFileDeleted(ctx context.Context, id int64) (queries.File, error)
 	HardDeleteFile(ctx context.Context, id int64) error
 	CheckFileOwner(ctx context.Context, arg queries.CheckFileOwnerParams) (bool, error)
-	GetPartyByID(ctx context.Context, id int16) (queries.Party, error)
-	ResetPartyLogo(ctx context.Context, id int16) error
 }
 
 // Handler holds the dependencies needed to service file-related HTTP requests.
 type Handler struct {
-	db             FilesDB
-	r2             *r2service.R2Service
-	rdb            *redis.Client
-	utils          *utils.Utils
-	usersService   UsersService
-	partiesService PartiesService
-	auditService   audit.AuditService
+	db           FilesDB
+	r2           *r2service.R2Service
+	rdb          *redis.Client
+	utils        *utils.Utils
+	usersService UsersService
+	auditService audit.AuditService
 }
 
 // NewHandler returns a Handler wired up with the provided database, R2 service, Redis,
 // and shared utilities instance.
-func NewHandler(db FilesDB, r2Svc *r2service.R2Service, rdb *redis.Client, u *utils.Utils, usersSvc UsersService, partiesSvc PartiesService, auditSvc audit.AuditService) *Handler {
-	return &Handler{db: db, r2: r2Svc, rdb: rdb, utils: u, usersService: usersSvc, partiesService: partiesSvc, auditService: auditSvc}
+func NewHandler(db FilesDB, r2Svc *r2service.R2Service, rdb *redis.Client, u *utils.Utils, usersSvc UsersService, auditSvc audit.AuditService) *Handler {
+	return &Handler{db: db, r2: r2Svc, rdb: rdb, utils: u, usersService: usersSvc, auditService: auditSvc}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,7 +147,7 @@ func (h *Handler) GenerateUploadURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine the public URL where the file will be accessible after a successful upload
-	// e.g. "https://cdn.free9ja.com/uploads/2026-08-04/my-image-<uuid>.png"
+	// e.g. "https://cdn.chipa.com/uploads/2026-08-04/my-image-<uuid>.png"
 	publicURL := h.r2.PublicURL(key)
 
 	// Resolve uploadedBy from authenticated JWT claims.
@@ -389,19 +382,12 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userFakeIDStr := r.URL.Query().Get("user_fake_id") // user_fake_id (string)
-	partyIDStr := r.URL.Query().Get("party_id")        // party_id (string)
 	fileType := r.URL.Query().Get("type")              // type (string)
 
 	// get the user Details, if trying to delete a user avatar
 	if userFakeIDStr != "" && fileType == "user_avatar" {
-		userFakeID, parseErr := strconv.ParseInt(userFakeIDStr, 10, 64)
-		if parseErr != nil {
-			h.utils.RespondError(w, http.StatusNotFound, "Error parsing user FID")
-			return
-		}
-
 		// get the user Details
-		user, dbErr := h.usersService.GetUserByFakeID(r.Context(), userFakeID)
+		user, dbErr := h.usersService.GetUserByFakeID(r.Context(), userFakeIDStr)
 		if dbErr != nil {
 			h.utils.RespondError(w, http.StatusNotFound, "User details not found")
 			return
@@ -426,48 +412,11 @@ func (h *Handler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		// if the user avatar file ID is the same as the file ID
 		if user.AvatarFileID.Valid && user.AvatarFileID.Int64 == fileID {
 			// update the user avatar file ID to NULL and invalidate user cache
-			_ = h.usersService.ResetUserAvatar(r.Context(), user.ID, userFakeID)
+			_ = h.usersService.ResetUserAvatar(r.Context(), user.ID, userFakeIDStr)
 		}
 	}
 
-	// get the party Details, if trying to delete a party logo
-	if partyIDStr != "" && fileType == "party_logo" {
-		partyID, parseErr := strconv.ParseInt(partyIDStr, 10, 16)
-		if parseErr != nil {
-			h.utils.RespondError(w, http.StatusNotFound, "Error parsing party ID")
-			return
-		}
 
-		// check permissions to delete this party image
-		allowed, perms, err := permsSvc.CheckPartyModificationPermission(claims, int16(partyID))
-		if !allowed {
-			h.utils.RespondError(w, http.StatusForbidden, err.Error())
-			return
-		}
-		auditModuleName, auditActorRole = perms.GetAuditActorInfo()
-
-		// get the party Details
-		party, dbErr := h.db.GetPartyByID(r.Context(), int16(partyID))
-		if dbErr != nil {
-			h.utils.RespondError(w, http.StatusNotFound, "Party details not found")
-			return
-		}
-
-		// if the file_id is available, we check if the file belongs to the party
-		if fileID > 0 {
-			// if the party logo file ID is not the same as the file ID
-			if !party.LogoFileID.Valid || party.LogoFileID.Int64 != fileID {
-				h.utils.RespondError(w, http.StatusNotFound, "You can only delete the party's own logo file")
-				return
-			}
-		}
-
-		// update the party logo file ID to NULL
-		_ = h.db.ResetPartyLogo(r.Context(), party.ID)
-
-		// also invalidate party cache (optional, frontend refetch)
-		h.partiesService.InvalidatePartyCache(r.Context(), party.ID)
-	}
 
 	// if the file_id is available, we delete from the r2 bucket
 	if fileID > 0 {

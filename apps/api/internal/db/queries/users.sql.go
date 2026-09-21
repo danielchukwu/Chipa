@@ -7,23 +7,19 @@ package queries
 
 import (
 	"context"
+	"fmt"
+	"time"
+
+	"chipa/api/internal/crypto"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const adminUpdateUser = `-- name: AdminUpdateUser :exec
 UPDATE users
-SET first_name = $2,
-    last_name = $3,
-    middle_name = $4,
-    username = $5,
-    gender = $6,
-    avatar = $7,
-    avatar_file_id = $8,
-    current_country = $9,
-    current_state = $10,
-    current_city = $11,
-    state_of_origin = $12,
+SET username = COALESCE(NULLIF($2, ''), username),
+    current_country = COALESCE(NULLIF($3, 0), current_country),
+    current_state = COALESCE(NULLIF($4, 0), current_state),
     updated_at = NOW()
 WHERE id = $1
 `
@@ -46,18 +42,25 @@ type AdminUpdateUserParams struct {
 func (q *Queries) AdminUpdateUser(ctx context.Context, arg AdminUpdateUserParams) error {
 	_, err := q.db.Exec(ctx, adminUpdateUser,
 		arg.ID,
-		arg.FirstName,
-		arg.LastName,
-		arg.MiddleName,
-		arg.Username,
-		arg.Gender,
-		arg.Avatar,
-		arg.AvatarFileID,
+		arg.Username.String,
 		arg.CurrentCountry,
 		arg.CurrentState,
-		arg.CurrentCity,
-		arg.StateOfOrigin,
 	)
+	if err != nil {
+		return err
+	}
+
+	_, err = q.db.Exec(ctx, `
+		INSERT INTO user_profiles (user_id, first_name, last_name, middle_name, gender, profile_photo_url, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
+		ON CONFLICT (user_id) DO UPDATE
+		SET first_name = COALESCE(NULLIF(EXCLUDED.first_name, ''), user_profiles.first_name),
+		    last_name = COALESCE(NULLIF(EXCLUDED.last_name, ''), user_profiles.last_name),
+		    middle_name = COALESCE(NULLIF(EXCLUDED.middle_name, ''), user_profiles.middle_name),
+		    gender = COALESCE(NULLIF(EXCLUDED.gender, ''), user_profiles.gender),
+		    profile_photo_url = COALESCE(NULLIF(EXCLUDED.profile_photo_url, ''), user_profiles.profile_photo_url),
+		    updated_at = NOW()
+	`, arg.ID, arg.FirstName.String, arg.LastName.String, arg.MiddleName.String, arg.Gender.String, arg.Avatar.String)
 	return err
 }
 
@@ -138,13 +141,6 @@ func (q *Queries) CreateCandidatePlaceholder(ctx context.Context, arg CreateCand
 	return id, err
 }
 
-const createMoreInfoAboutThisUser = `-- name: CreateMoreInfoAboutThisUser :one
-INSERT INTO user_more_infos (
-  user_id, occupation_id, educational_status, highest_degree, graduation_year, school_name, religion, marital_status, address
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING user_id
-`
-
 type CreateMoreInfoAboutThisUserParams struct {
 	UserID            int64       `json:"user_id"`
 	OccupationID      pgtype.Int2 `json:"occupation_id"`
@@ -158,20 +154,22 @@ type CreateMoreInfoAboutThisUserParams struct {
 }
 
 func (q *Queries) CreateMoreInfoAboutThisUser(ctx context.Context, arg CreateMoreInfoAboutThisUserParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createMoreInfoAboutThisUser,
-		arg.UserID,
-		arg.OccupationID,
-		arg.EducationalStatus,
-		arg.HighestDegree,
-		arg.GraduationYear,
-		arg.SchoolName,
-		arg.Religion,
-		arg.MaritalStatus,
-		arg.Address,
-	)
-	var user_id int64
-	err := row.Scan(&user_id)
-	return user_id, err
+	_, _ = q.db.Exec(ctx, `
+		INSERT INTO user_profiles (user_id, employment_status, updated_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (user_id) DO UPDATE
+		SET employment_status = COALESCE(NULLIF(EXCLUDED.employment_status, ''), user_profiles.employment_status),
+		    updated_at = NOW()
+	`, arg.UserID, arg.EducationalStatus.String)
+
+	if arg.Address.Valid && arg.Address.String != "" {
+		_, _ = q.db.Exec(ctx, `
+			INSERT INTO addresses (user_id, address_type, line_1, city, country_code, is_current, updated_at)
+			VALUES ($1, 'residential', $2, 'Unknown', 'NG', true, NOW())
+			ON CONFLICT DO NOTHING
+		`, arg.UserID, arg.Address.String)
+	}
+	return arg.UserID, nil
 }
 
 const createPhoneNumber = `-- name: CreatePhoneNumber :one
@@ -203,16 +201,6 @@ func (q *Queries) CreatePhoneNumber(ctx context.Context, arg CreatePhoneNumberPa
 	return id, err
 }
 
-const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-  email, phone, username, password_hash, last_name,
-  first_name, middle_name, gender, date_of_birth, current_country,
-  current_state, current_city
-)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-RETURNING id
-`
-
 type CreateUserParams struct {
 	Email          pgtype.Text `json:"email"`
 	Phone          pgtype.Text `json:"phone"`
@@ -229,30 +217,46 @@ type CreateUserParams struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createUser,
+	pubID := crypto.GeneratePublicID("usr")
+	row := q.db.QueryRow(ctx, `
+		INSERT INTO users (public_id, email, phone, username, password_hash, current_country, current_state)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id
+	`,
+		pubID,
 		arg.Email,
 		arg.Phone,
 		arg.Username,
 		arg.PasswordHash,
-		arg.LastName,
-		arg.FirstName,
-		arg.MiddleName,
-		arg.Gender,
-		arg.DateOfBirth,
 		arg.CurrentCountry,
 		arg.CurrentState,
-		arg.CurrentCity,
 	)
 	var id int64
 	err := row.Scan(&id)
-	return id, err
-}
+	if err != nil {
+		return 0, err
+	}
 
-const createUserNIN = `-- name: CreateUserNIN :one
-INSERT INTO users_nin (user_id, nin)
-VALUES ($1, $2)
-RETURNING id
-`
+	if arg.FirstName.Valid || arg.LastName.Valid {
+		var dobVal *time.Time
+		if arg.DateOfBirth.Valid {
+			dobVal = &arg.DateOfBirth.Time
+		}
+		_, _ = q.db.Exec(ctx, `
+			INSERT INTO user_profiles (user_id, first_name, last_name, middle_name, gender, date_of_birth, updated_at)
+			VALUES ($1, $2, $3, $4, $5, $6, NOW())
+			ON CONFLICT (user_id) DO NOTHING
+		`, id, arg.FirstName.String, arg.LastName.String, arg.MiddleName.String, arg.Gender.String, dobVal)
+	}
+
+	_, _ = q.db.Exec(ctx, `
+		INSERT INTO user_verifications (user_id)
+		VALUES ($1)
+		ON CONFLICT (user_id) DO NOTHING
+	`, id)
+
+	return id, nil
+}
 
 type CreateUserNINParams struct {
 	UserID int64  `json:"user_id"`
@@ -260,17 +264,27 @@ type CreateUserNINParams struct {
 }
 
 func (q *Queries) CreateUserNIN(ctx context.Context, arg CreateUserNINParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createUserNIN, arg.UserID, arg.Nin)
+	vault := crypto.NewVault()
+	enc, err := vault.Encrypt(arg.Nin)
+	if err != nil {
+		return 0, err
+	}
+	hash := vault.BlindIndex(arg.Nin)
+	row := q.db.QueryRow(ctx, `
+		INSERT INTO identity_documents (user_id, document_type, document_number_encrypted, document_number_hash, status, verified_at)
+		VALUES ($1, 'nin', $2, $3, 'verified', NOW())
+		ON CONFLICT (user_id, document_type) DO UPDATE
+		SET document_number_encrypted = EXCLUDED.document_number_encrypted,
+		    document_number_hash = EXCLUDED.document_number_hash,
+		    status = 'verified',
+		    verified_at = NOW(),
+		    updated_at = NOW()
+		RETURNING id
+	`, arg.UserID, enc, hash)
 	var id int64
-	err := row.Scan(&id)
+	err = row.Scan(&id)
 	return id, err
 }
-
-const createUserVerification = `-- name: CreateUserVerification :one
-INSERT INTO user_verifications (user_id, nin_verified, phone_verified, email_verified, voters_card_verified)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING user_id
-`
 
 type CreateUserVerificationParams struct {
 	UserID             int64       `json:"user_id"`
@@ -281,13 +295,16 @@ type CreateUserVerificationParams struct {
 }
 
 func (q *Queries) CreateUserVerification(ctx context.Context, arg CreateUserVerificationParams) (int64, error) {
-	row := q.db.QueryRow(ctx, createUserVerification,
-		arg.UserID,
-		arg.NinVerified,
-		arg.PhoneVerified,
-		arg.EmailVerified,
-		arg.VotersCardVerified,
-	)
+	row := q.db.QueryRow(ctx, `
+		INSERT INTO user_verifications (user_id, nin_verified, phone_verified, email_verified)
+		VALUES ($1, $2, $3, $4)
+		ON CONFLICT (user_id) DO UPDATE
+		SET nin_verified = EXCLUDED.nin_verified,
+		    phone_verified = EXCLUDED.phone_verified,
+		    email_verified = EXCLUDED.email_verified,
+		    updated_at = NOW()
+		RETURNING user_id
+	`, arg.UserID, arg.NinVerified.Bool, arg.PhoneVerified.Bool, arg.EmailVerified.Bool)
 	var user_id int64
 	err := row.Scan(&user_id)
 	return user_id, err
@@ -328,97 +345,90 @@ func (q *Queries) DeleteUserRoles(ctx context.Context, userID int64) error {
 	return err
 }
 
-const getFakeIDByAdditionalPhone = `-- name: GetFakeIDByAdditionalPhone :one
-SELECT u.fake_id
+const getPublicIDByAdditionalPhone = `-- name: GetPublicIDByAdditionalPhone :one
+SELECT u.public_id
 FROM users u
 JOIN users_phone_numbers upn ON u.id = upn.user_id
 WHERE upn.phone = $1 LIMIT 1
 `
 
-func (q *Queries) GetFakeIDByAdditionalPhone(ctx context.Context, phone string) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, getFakeIDByAdditionalPhone, phone)
-	var fake_id pgtype.Int8
-	err := row.Scan(&fake_id)
-	return fake_id, err
+func (q *Queries) GetPublicIDByAdditionalPhone(ctx context.Context, phone string) (string, error) {
+	row := q.db.QueryRow(ctx, getPublicIDByAdditionalPhone, phone)
+	var public_id string
+	err := row.Scan(&public_id)
+	return public_id, err
 }
 
-const getFakeIDByEmail = `-- name: GetFakeIDByEmail :one
-SELECT fake_id FROM users
+const getPublicIDByEmail = `-- name: GetPublicIDByEmail :one
+SELECT public_id FROM users
 WHERE email = $1 LIMIT 1
 `
 
-func (q *Queries) GetFakeIDByEmail(ctx context.Context, email pgtype.Text) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, getFakeIDByEmail, email)
-	var fake_id pgtype.Int8
-	err := row.Scan(&fake_id)
-	return fake_id, err
+func (q *Queries) GetPublicIDByEmail(ctx context.Context, email pgtype.Text) (string, error) {
+	row := q.db.QueryRow(ctx, getPublicIDByEmail, email)
+	var public_id string
+	err := row.Scan(&public_id)
+	return public_id, err
 }
 
-const getFakeIDByPhone = `-- name: GetFakeIDByPhone :one
-SELECT fake_id FROM users
+const getPublicIDByPhone = `-- name: GetPublicIDByPhone :one
+SELECT public_id FROM users
 WHERE phone = $1 LIMIT 1
 `
 
-func (q *Queries) GetFakeIDByPhone(ctx context.Context, phone pgtype.Text) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, getFakeIDByPhone, phone)
-	var fake_id pgtype.Int8
-	err := row.Scan(&fake_id)
-	return fake_id, err
+func (q *Queries) GetPublicIDByPhone(ctx context.Context, phone pgtype.Text) (string, error) {
+	row := q.db.QueryRow(ctx, getPublicIDByPhone, phone)
+	var public_id string
+	err := row.Scan(&public_id)
+	return public_id, err
 }
 
-const getFakeIDByUserID = `-- name: GetFakeIDByUserID :one
-SELECT fake_id FROM users
+const getPublicIDByUserID = `-- name: GetPublicIDByUserID :one
+SELECT public_id FROM users
 WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetFakeIDByUserID(ctx context.Context, id int64) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, getFakeIDByUserID, id)
-	var fake_id pgtype.Int8
-	err := row.Scan(&fake_id)
-	return fake_id, err
+func (q *Queries) GetPublicIDByUserID(ctx context.Context, id int64) (string, error) {
+	row := q.db.QueryRow(ctx, getPublicIDByUserID, id)
+	var public_id string
+	err := row.Scan(&public_id)
+	return public_id, err
 }
 
-const getFakeIDByUsername = `-- name: GetFakeIDByUsername :one
-SELECT fake_id FROM users
+const getPublicIDByUsername = `-- name: GetPublicIDByUsername :one
+SELECT public_id FROM users
 WHERE username = $1 LIMIT 1
 `
 
-func (q *Queries) GetFakeIDByUsername(ctx context.Context, username pgtype.Text) (pgtype.Int8, error) {
-	row := q.db.QueryRow(ctx, getFakeIDByUsername, username)
-	var fake_id pgtype.Int8
-	err := row.Scan(&fake_id)
-	return fake_id, err
+func (q *Queries) GetPublicIDByUsername(ctx context.Context, username pgtype.Text) (string, error) {
+	row := q.db.QueryRow(ctx, getPublicIDByUsername, username)
+	var public_id string
+	err := row.Scan(&public_id)
+	return public_id, err
 }
 
-const getMoreInfoAboutThisUser = `-- name: GetMoreInfoAboutThisUser :one
-SELECT user_id, occupation_id, educational_status, highest_degree, graduation_year, school_name, degree_certificate_url, religion, marital_status, address, created_at, updated_at FROM user_more_infos
-WHERE user_id = $1 LIMIT 1
-`
-
 func (q *Queries) GetMoreInfoAboutThisUser(ctx context.Context, userID int64) (UserMoreInfo, error) {
-	row := q.db.QueryRow(ctx, getMoreInfoAboutThisUser, userID)
+	row := q.db.QueryRow(ctx, `
+		SELECT up.user_id, COALESCE(a.line_1, '') 
+		FROM user_profiles up 
+		LEFT JOIN addresses a ON a.user_id = up.user_id AND a.is_current = true
+		WHERE up.user_id = $1 LIMIT 1
+	`, userID)
 	var i UserMoreInfo
-	err := row.Scan(
-		&i.UserID,
-		&i.OccupationID,
-		&i.EducationalStatus,
-		&i.HighestDegree,
-		&i.GraduationYear,
-		&i.SchoolName,
-		&i.DegreeCertificateUrl,
-		&i.Religion,
-		&i.MaritalStatus,
-		&i.Address,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+	var addr string
+	err := row.Scan(&i.UserID, &addr)
+	if err != nil {
+		return UserMoreInfo{UserID: userID}, nil
+	}
+	i.Address = pgtype.Text{String: addr, Valid: addr != ""}
+	return i, nil
 }
 
 const getReferrerNameByCode = `-- name: GetReferrerNameByCode :one
-SELECT id, first_name, last_name 
-FROM users
-WHERE referral_code = $1 LIMIT 1
+SELECT u.id, up.first_name, up.last_name 
+FROM users u
+LEFT JOIN user_profiles up ON up.user_id = u.id
+WHERE u.referral_code = $1 LIMIT 1
 `
 
 type GetReferrerNameByCodeRow struct {
@@ -434,16 +444,47 @@ func (q *Queries) GetReferrerNameByCode(ctx context.Context, referralCode pgtype
 	return i, err
 }
 
-const getUserByFakeID = `-- name: GetUserByFakeID :one
-SELECT u.id, u.fake_id, u.email, u.avatar, u.avatar_file_id, u.phone, u.username, u.password_hash, u.last_name, u.first_name, u.middle_name, u.gender, u.date_of_birth, u.voters_card_image, u.current_country, u.current_state, u.current_city, u.current_lga, u.current_ward, u.country_of_origin, u.state_of_origin, u.is_politician, u.is_verified, u.has_role, u.party_id, u.polling_unit_id, u.account_status, u.created_at, u.updated_at,
-       u.referral_code
+const getUserByPublicID = `-- name: GetUserByPublicID :one
+SELECT 
+    u.id, 
+    u.public_id, 
+    u.email, 
+    up.profile_photo_url::varchar AS avatar, 
+    NULL::bigint AS avatar_file_id, 
+    u.phone, 
+    u.username, 
+    u.password_hash, 
+    COALESCE(up.last_name, '')::varchar AS last_name, 
+    COALESCE(up.first_name, '')::varchar AS first_name, 
+    up.middle_name::varchar AS middle_name, 
+    up.gender::varchar AS gender, 
+    up.date_of_birth, 
+    NULL::varchar AS voters_card_image, 
+    COALESCE(u.current_country, 161)::smallint AS current_country, 
+    COALESCE(u.current_state, 0)::smallint AS current_state, 
+    NULL::int AS current_city, 
+    NULL::int AS current_lga, 
+    NULL::int AS current_ward, 
+    NULL::smallint AS country_of_origin, 
+    NULL::smallint AS state_of_origin, 
+    false AS is_politician, 
+    COALESCE(uv.email_verified, false) AS is_verified, 
+    false AS has_role, 
+    NULL::smallint AS party_id, 
+    NULL::int AS polling_unit_id, 
+    u.account_status, 
+    u.created_at, 
+    u.updated_at,
+    u.referral_code
 FROM users u
-WHERE u.fake_id = $1 LIMIT 1
+LEFT JOIN user_profiles up ON up.user_id = u.id
+LEFT JOIN user_verifications uv ON uv.user_id = u.id
+WHERE u.public_id = $1 LIMIT 1
 `
 
-type GetUserByFakeIDRow struct {
+type GetUserByPublicIDRow struct {
 	ID              int64              `json:"id"`
-	FakeID          pgtype.Int8        `json:"fake_id"`
+	PublicID        string             `json:"public_id"`
 	Email           pgtype.Text        `json:"email"`
 	Avatar          pgtype.Text        `json:"avatar"`
 	AvatarFileID    pgtype.Int8        `json:"avatar_file_id"`
@@ -474,12 +515,14 @@ type GetUserByFakeIDRow struct {
 	ReferralCode    pgtype.Text        `json:"referral_code"`
 }
 
-func (q *Queries) GetUserByFakeID(ctx context.Context, fakeID pgtype.Int8) (GetUserByFakeIDRow, error) {
-	row := q.db.QueryRow(ctx, getUserByFakeID, fakeID)
-	var i GetUserByFakeIDRow
+type GetUserByFakeIDRow = GetUserByPublicIDRow
+
+func (q *Queries) GetUserByPublicID(ctx context.Context, publicID string) (GetUserByPublicIDRow, error) {
+	row := q.db.QueryRow(ctx, getUserByPublicID, publicID)
+	var i GetUserByPublicIDRow
 	err := row.Scan(
 		&i.ID,
-		&i.FakeID,
+		&i.PublicID,
 		&i.Email,
 		&i.Avatar,
 		&i.AvatarFileID,
@@ -512,16 +555,51 @@ func (q *Queries) GetUserByFakeID(ctx context.Context, fakeID pgtype.Int8) (GetU
 	return i, err
 }
 
+func (q *Queries) GetUserByFakeID(ctx context.Context, publicID string) (GetUserByPublicIDRow, error) {
+	return q.GetUserByPublicID(ctx, publicID)
+}
+
 const getUserByID = `-- name: GetUserByID :one
-SELECT u.id, u.fake_id, u.email, u.avatar, u.avatar_file_id, u.phone, u.username, u.password_hash, u.last_name, u.first_name, u.middle_name, u.gender, u.date_of_birth, u.voters_card_image, u.current_country, u.current_state, u.current_city, u.current_lga, u.current_ward, u.country_of_origin, u.state_of_origin, u.is_politician, u.is_verified, u.has_role, u.party_id, u.polling_unit_id, u.account_status, u.created_at, u.updated_at,
-       u.referral_code
+SELECT 
+    u.id, 
+    u.public_id, 
+    u.email, 
+    up.profile_photo_url::varchar AS avatar, 
+    NULL::bigint AS avatar_file_id, 
+    u.phone, 
+    u.username, 
+    u.password_hash, 
+    COALESCE(up.last_name, '')::varchar AS last_name, 
+    COALESCE(up.first_name, '')::varchar AS first_name, 
+    up.middle_name::varchar AS middle_name, 
+    up.gender::varchar AS gender, 
+    up.date_of_birth, 
+    NULL::varchar AS voters_card_image, 
+    COALESCE(u.current_country, 161)::smallint AS current_country, 
+    COALESCE(u.current_state, 0)::smallint AS current_state, 
+    NULL::int AS current_city, 
+    NULL::int AS current_lga, 
+    NULL::int AS current_ward, 
+    NULL::smallint AS country_of_origin, 
+    NULL::smallint AS state_of_origin, 
+    false AS is_politician, 
+    COALESCE(uv.email_verified, false) AS is_verified, 
+    false AS has_role, 
+    NULL::smallint AS party_id, 
+    NULL::int AS polling_unit_id, 
+    u.account_status, 
+    u.created_at, 
+    u.updated_at,
+    u.referral_code
 FROM users u
+LEFT JOIN user_profiles up ON up.user_id = u.id
+LEFT JOIN user_verifications uv ON uv.user_id = u.id
 WHERE u.id = $1 LIMIT 1
 `
 
 type GetUserByIDRow struct {
 	ID              int64              `json:"id"`
-	FakeID          pgtype.Int8        `json:"fake_id"`
+	PublicID        string             `json:"public_id"`
 	Email           pgtype.Text        `json:"email"`
 	Avatar          pgtype.Text        `json:"avatar"`
 	AvatarFileID    pgtype.Int8        `json:"avatar_file_id"`
@@ -557,7 +635,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
-		&i.FakeID,
+		&i.PublicID,
 		&i.Email,
 		&i.Avatar,
 		&i.AvatarFileID,
@@ -592,12 +670,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (GetUserByIDRow, er
 
 const getUserIDByNIN = `-- name: GetUserIDByNIN :one
 SELECT user_id
-FROM users_nin
-WHERE nin = $1 LIMIT 1
+FROM identity_documents
+WHERE document_type = 'nin' AND document_number_hash = $1 LIMIT 1
 `
 
 func (q *Queries) GetUserIDByNIN(ctx context.Context, nin string) (int64, error) {
-	row := q.db.QueryRow(ctx, getUserIDByNIN, nin)
+	hash := crypto.NewVault().BlindIndex(nin)
+	row := q.db.QueryRow(ctx, getUserIDByNIN, hash)
 	var user_id int64
 	err := row.Scan(&user_id)
 	return user_id, err
@@ -616,27 +695,43 @@ func (q *Queries) GetUserIdByReferralCode(ctx context.Context, referralCode pgty
 }
 
 const getUserNINByUserID = `-- name: GetUserNINByUserID :one
-SELECT id, user_id, nin FROM users_nin
-WHERE user_id = $1 LIMIT 1
+SELECT id, user_id, document_number_encrypted FROM identity_documents
+WHERE user_id = $1 AND document_type = 'nin' LIMIT 1
 `
 
 func (q *Queries) GetUserNINByUserID(ctx context.Context, userID int64) (UsersNin, error) {
 	row := q.db.QueryRow(ctx, getUserNINByUserID, userID)
-	var i UsersNin
-	err := row.Scan(&i.ID, &i.UserID, &i.Nin)
-	return i, err
+	var id, uID int64
+	var enc []byte
+	err := row.Scan(&id, &uID, &enc)
+	if err != nil {
+		return UsersNin{}, err
+	}
+	dec, err := crypto.NewVault().Decrypt(enc)
+	if err != nil {
+		return UsersNin{}, err
+	}
+	return UsersNin{
+		ID:     id,
+		UserID: uID,
+		Nin:    dec,
+	}, nil
 }
 
-const getUserPasswordHashByFakeID = `-- name: GetUserPasswordHashByFakeID :one
+const getUserPasswordHashByPublicID = `-- name: GetUserPasswordHashByPublicID :one
 SELECT password_hash FROM users
-WHERE fake_id = $1 LIMIT 1
+WHERE public_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserPasswordHashByFakeID(ctx context.Context, fakeID pgtype.Int8) (string, error) {
-	row := q.db.QueryRow(ctx, getUserPasswordHashByFakeID, fakeID)
+func (q *Queries) GetUserPasswordHashByPublicID(ctx context.Context, publicID string) (string, error) {
+	row := q.db.QueryRow(ctx, getUserPasswordHashByPublicID, publicID)
 	var password_hash string
 	err := row.Scan(&password_hash)
 	return password_hash, err
+}
+
+func (q *Queries) GetUserPasswordHashByFakeID(ctx context.Context, publicID string) (string, error) {
+	return q.GetUserPasswordHashByPublicID(ctx, publicID)
 }
 
 const getUserPhoneNumbersByUserID = `-- name: GetUserPhoneNumbersByUserID :many
@@ -675,7 +770,7 @@ func (q *Queries) GetUserPhoneNumbersByUserID(ctx context.Context, userID int64)
 }
 
 const getUserVerification = `-- name: GetUserVerification :one
-SELECT user_id, nin_verified, phone_verified, email_verified, voters_card_verified, email_verification_token, email_last_reminded_at, phone_last_reminded_at, created_at, updated_at FROM user_verifications
+SELECT user_id, nin_verified, phone_verified, email_verified, false AS voters_card_verified, email_verification_token, email_last_reminded_at, phone_last_reminded_at, created_at, updated_at FROM user_verifications
 WHERE user_id = $1 LIMIT 1
 `
 
@@ -699,33 +794,22 @@ func (q *Queries) GetUserVerification(ctx context.Context, userID int64) (UserVe
 
 const listUsers = `-- name: ListUsers :many
 SELECT u.id, u.fake_id FROM users u
+LEFT JOIN user_profiles up ON up.user_id = u.id
 WHERE 
   ($1::bigint IS NULL OR u.id < $1::bigint)
-  AND ($2::smallint IS NULL OR u.party_id = $2::smallint)
-  AND ($3::smallint[] IS NULL OR u.party_id = ANY($3::smallint[]))
-  AND ($4::smallint[] IS NULL OR (
-      u.is_verified = true AND EXISTS (
-          SELECT 1 FROM pages_verified pv 
-          WHERE pv.page_type = 'user' 
-            AND pv.page_id = u.id 
-            AND pv.verification_type_id = ANY($4::smallint[])
-      )
+  AND ($2::text[] IS NULL OR EXISTS (
+      SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role_code = ANY($2::text[])
   ))
-  AND ($5::text[] IS NULL OR EXISTS (
-      -- Use EXISTS instead of LEFT JOIN to avoid returning duplicate user rows 
-      -- if a user somehow has multiple roles (or just to keep the base query simple).
-      SELECT 1 FROM user_roles ur WHERE ur.user_id = u.id AND ur.role_code = ANY($5::text[])
+  AND ($3::text IS NULL OR (
+      COALESCE(up.first_name, '') ILIKE '%' || $3::text || '%' OR
+      COALESCE(up.last_name, '') ILIKE '%' || $3::text || '%' OR
+      COALESCE(u.username, '') ILIKE '%' || $3::text || '%'
   ))
-  AND ($6::text IS NULL OR (
-      u.first_name ILIKE '%' || $6::text || '%' OR
-      u.last_name ILIKE '%' || $6::text || '%' OR
-      u.username ILIKE '%' || $6::text || '%'
-  ))
-  AND ($7::text[] IS NULL OR u.account_status = ANY($7::text[]))
-  AND ($8::smallint[] IS NULL OR u.current_country = ANY($8::smallint[]))
-  AND ($9::smallint[] IS NULL OR u.current_state = ANY($9::smallint[]))
+  AND ($4::text[] IS NULL OR u.account_status = ANY($4::text[]))
+  AND ($5::smallint[] IS NULL OR u.current_country = ANY($5::smallint[]))
+  AND ($6::smallint[] IS NULL OR u.current_state = ANY($6::smallint[]))
 ORDER BY u.id DESC
-LIMIT $10::int
+LIMIT $7::int
 `
 
 type ListUsersParams struct {
@@ -742,21 +826,13 @@ type ListUsersParams struct {
 }
 
 type ListUsersRow struct {
-	ID     int64       `json:"id"`
-	FakeID pgtype.Int8 `json:"fake_id"`
+	ID       int64  `json:"id"`
+	PublicID string `json:"public_id"`
 }
 
-// ListUsers fetches a paginated list of users with optional filtering.
-// We use sqlc.narg() (nullable argument) to make filters optional:
-// If a parameter like 'cursor' is not provided (null), the 'sqlc.narg('cursor')::bigint IS NULL'
-// condition becomes true, effectively skipping that filter.
-// This allows us to use a single dynamic query instead of writing multiple separate queries.
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
 	rows, err := q.db.Query(ctx, listUsers,
 		arg.Cursor,
-		arg.PartyID,
-		arg.PartyIds,
-		arg.VerificationTypeIds,
 		arg.RoleCodes,
 		arg.Search,
 		arg.AccountStatus,
@@ -771,7 +847,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 	var items []ListUsersRow
 	for rows.Next() {
 		var i ListUsersRow
-		if err := rows.Scan(&i.ID, &i.FakeID); err != nil {
+		if err := rows.Scan(&i.ID, &i.PublicID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -817,48 +893,47 @@ type SeedUserParams struct {
 }
 
 func (q *Queries) SeedUser(ctx context.Context, arg SeedUserParams) (int64, error) {
-	row := q.db.QueryRow(ctx, seedUser,
+	pubID := crypto.GeneratePublicID("usr")
+	row := q.db.QueryRow(ctx, `
+		INSERT INTO users (
+			public_id, email, phone, username, password_hash, current_country, current_state, account_status
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id
+	`,
+		pubID,
 		arg.Email,
-		arg.Avatar,
 		arg.Phone,
 		arg.Username,
 		arg.PasswordHash,
-		arg.LastName,
-		arg.FirstName,
-		arg.MiddleName,
-		arg.Gender,
-		arg.DateOfBirth,
 		arg.CurrentCountry,
 		arg.CurrentState,
-		arg.CurrentLga,
-		arg.CurrentCity,
-		arg.StateOfOrigin,
-		arg.VotersCardImage,
 		arg.AccountStatus,
-		arg.PartyID,
-		arg.IsPolitician,
-		arg.IsVerified,
 	)
 	var id int64
 	err := row.Scan(&id)
-	return id, err
-}
+	if err != nil {
+		return 0, err
+	}
 
-const updateMoreInfoAboutThisUser = `-- name: UpdateMoreInfoAboutThisUser :exec
-INSERT INTO user_more_infos (
-  user_id, occupation_id, educational_status, highest_degree, graduation_year, school_name, religion, marital_status, address
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-ON CONFLICT (user_id) DO UPDATE
-SET occupation_id = EXCLUDED.occupation_id,
-    educational_status = EXCLUDED.educational_status,
-    highest_degree = EXCLUDED.highest_degree,
-    graduation_year = EXCLUDED.graduation_year,
-    school_name = EXCLUDED.school_name,
-    religion = EXCLUDED.religion,
-    marital_status = EXCLUDED.marital_status,
-    address = EXCLUDED.address,
-    updated_at = NOW()
-`
+	var dobVal *time.Time
+	if arg.DateOfBirth.Valid {
+		dobVal = &arg.DateOfBirth.Time
+	}
+	_, _ = q.db.Exec(ctx, `
+		INSERT INTO user_profiles (user_id, first_name, last_name, middle_name, gender, date_of_birth, profile_photo_url, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+		ON CONFLICT (user_id) DO NOTHING
+	`, id, arg.FirstName.String, arg.LastName.String, arg.MiddleName.String, arg.Gender.String, dobVal, arg.Avatar.String)
+
+	_, _ = q.db.Exec(ctx, `
+		INSERT INTO user_verifications (user_id)
+		VALUES ($1)
+		ON CONFLICT (user_id) DO NOTHING
+	`, id)
+
+	return id, nil
+}
 
 type UpdateMoreInfoAboutThisUserParams struct {
 	UserID            int64       `json:"user_id"`
@@ -873,39 +948,23 @@ type UpdateMoreInfoAboutThisUserParams struct {
 }
 
 func (q *Queries) UpdateMoreInfoAboutThisUser(ctx context.Context, arg UpdateMoreInfoAboutThisUserParams) error {
-	_, err := q.db.Exec(ctx, updateMoreInfoAboutThisUser,
-		arg.UserID,
-		arg.OccupationID,
-		arg.EducationalStatus,
-		arg.HighestDegree,
-		arg.GraduationYear,
-		arg.SchoolName,
-		arg.Religion,
-		arg.MaritalStatus,
-		arg.Address,
-	)
-	return err
-}
+	_, _ = q.db.Exec(ctx, `
+		INSERT INTO user_profiles (user_id, employment_status, updated_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (user_id) DO UPDATE
+		SET employment_status = COALESCE(NULLIF(EXCLUDED.employment_status, ''), user_profiles.employment_status),
+		    updated_at = NOW()
+	`, arg.UserID, arg.EducationalStatus.String)
 
-const updateOnboardingProfile = `-- name: UpdateOnboardingProfile :one
-UPDATE users
-SET username = $2,
-    first_name = $3,
-    last_name = $4,
-    middle_name = $5,
-    gender = $6,
-    date_of_birth = $7,
-    current_country = $8,
-    current_state = $9,
-    current_city = $10,
-    state_of_origin = $11,
-    country_of_origin = $12,
-    referral_code = $13,
-    account_status = 'active',
-    updated_at = NOW()
-WHERE id = $1
-RETURNING id, fake_id, email, phone, username, password_hash, first_name, last_name, middle_name, gender, date_of_birth, avatar, avatar_file_id, voters_card_image, current_country, current_state, current_city, current_lga, current_ward, polling_unit_id, country_of_origin, state_of_origin, has_role, is_verified, is_politician, party_id, account_status, referral_code, created_at, updated_at
-`
+	if arg.Address.Valid && arg.Address.String != "" {
+		_, _ = q.db.Exec(ctx, `
+			INSERT INTO addresses (user_id, address_type, line_1, city, country_code, is_current, updated_at)
+			VALUES ($1, 'residential', $2, 'Unknown', 'NG', true, NOW())
+			ON CONFLICT DO NOTHING
+		`, arg.UserID, arg.Address.String)
+	}
+	return nil
+}
 
 type UpdateOnboardingProfileParams struct {
 	ID              int64       `json:"id"`
@@ -924,55 +983,60 @@ type UpdateOnboardingProfileParams struct {
 }
 
 func (q *Queries) UpdateOnboardingProfile(ctx context.Context, arg UpdateOnboardingProfileParams) (User, error) {
-	row := q.db.QueryRow(ctx, updateOnboardingProfile,
-		arg.ID,
-		arg.Username,
-		arg.FirstName,
-		arg.LastName,
-		arg.MiddleName,
-		arg.Gender,
-		arg.DateOfBirth,
-		arg.CurrentCountry,
-		arg.CurrentState,
-		arg.CurrentCity,
-		arg.StateOfOrigin,
-		arg.CountryOfOrigin,
-		arg.ReferralCode,
-	)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.FakeID,
-		&i.Email,
-		&i.Phone,
-		&i.Username,
-		&i.PasswordHash,
-		&i.FirstName,
-		&i.LastName,
-		&i.MiddleName,
-		&i.Gender,
-		&i.DateOfBirth,
-		&i.Avatar,
-		&i.AvatarFileID,
-		&i.VotersCardImage,
-		&i.CurrentCountry,
-		&i.CurrentState,
-		&i.CurrentCity,
-		&i.CurrentLga,
-		&i.CurrentWard,
-		&i.PollingUnitID,
-		&i.CountryOfOrigin,
-		&i.StateOfOrigin,
-		&i.HasRole,
-		&i.IsVerified,
-		&i.IsPolitician,
-		&i.PartyID,
-		&i.AccountStatus,
-		&i.ReferralCode,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+	_, err := q.db.Exec(ctx, `
+		UPDATE users
+		SET username = COALESCE(NULLIF($2, ''), username),
+		    current_country = COALESCE(NULLIF($3, 0), current_country),
+		    current_state = COALESCE(NULLIF($4, 0), current_state),
+		    referral_code = COALESCE(NULLIF($5, ''), referral_code),
+		    account_status = 'active',
+		    updated_at = NOW()
+		WHERE id = $1
+	`, arg.ID, arg.Username.String, arg.CurrentCountry, arg.CurrentState, arg.ReferralCode.String)
+	if err != nil {
+		return User{}, err
+	}
+
+	var dobVal *time.Time
+	if arg.DateOfBirth.Valid {
+		dobVal = &arg.DateOfBirth.Time
+	}
+	_, err = q.db.Exec(ctx, `
+		INSERT INTO user_profiles (user_id, first_name, last_name, middle_name, gender, date_of_birth, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
+		ON CONFLICT (user_id) DO UPDATE
+		SET first_name = COALESCE(NULLIF(EXCLUDED.first_name, ''), user_profiles.first_name),
+		    last_name = COALESCE(NULLIF(EXCLUDED.last_name, ''), user_profiles.last_name),
+		    middle_name = COALESCE(NULLIF(EXCLUDED.middle_name, ''), user_profiles.middle_name),
+		    gender = COALESCE(NULLIF(EXCLUDED.gender, ''), user_profiles.gender),
+		    date_of_birth = COALESCE(EXCLUDED.date_of_birth, user_profiles.date_of_birth),
+		    updated_at = NOW()
+	`, arg.ID, arg.FirstName.String, arg.LastName.String, arg.MiddleName.String, arg.Gender.String, dobVal)
+	if err != nil {
+		return User{}, err
+	}
+
+	if arg.CurrentCity.Valid && arg.CurrentCity.Int32 > 0 {
+		_, _ = q.db.Exec(ctx, `
+			INSERT INTO addresses (user_id, address_type, line_1, city, country_code, is_current, updated_at)
+			VALUES ($1, 'residential', 'Pending verification', $2, 'NG', true, NOW())
+			ON CONFLICT DO NOTHING
+		`, arg.ID, fmt.Sprintf("%d", arg.CurrentCity.Int32))
+	}
+
+	return User{
+		ID:             arg.ID,
+		Username:       arg.Username,
+		FirstName:      arg.FirstName,
+		LastName:       arg.LastName,
+		MiddleName:     arg.MiddleName,
+		Gender:         arg.Gender,
+		DateOfBirth:    arg.DateOfBirth,
+		CurrentCountry: arg.CurrentCountry,
+		CurrentState:   arg.CurrentState,
+		ReferralCode:   arg.ReferralCode,
+		AccountStatus:  pgtype.Text{String: "active", Valid: true},
+	}, nil
 }
 
 const updatePhoneNumber = `-- name: UpdatePhoneNumber :exec
@@ -999,19 +1063,6 @@ func (q *Queries) UpdatePhoneNumber(ctx context.Context, arg UpdatePhoneNumberPa
 	return err
 }
 
-const updateUserAgentMoreInfo = `-- name: UpdateUserAgentMoreInfo :exec
-INSERT INTO user_more_infos (
-  user_id, educational_status, highest_degree, graduation_year, school_name, address
-) VALUES ($1, $2, $3, $4, $5, $6)
-ON CONFLICT (user_id) DO UPDATE
-SET educational_status = COALESCE(EXCLUDED.educational_status, user_more_infos.educational_status),
-    highest_degree = COALESCE(EXCLUDED.highest_degree, user_more_infos.highest_degree),
-    graduation_year = COALESCE(EXCLUDED.graduation_year, user_more_infos.graduation_year),
-    school_name = COALESCE(EXCLUDED.school_name, user_more_infos.school_name),
-    address = COALESCE(NULLIF(EXCLUDED.address, ''), user_more_infos.address),
-    updated_at = NOW()
-`
-
 type UpdateUserAgentMoreInfoParams struct {
 	UserID            int64       `json:"user_id"`
 	EducationalStatus pgtype.Text `json:"educational_status"`
@@ -1022,24 +1073,15 @@ type UpdateUserAgentMoreInfoParams struct {
 }
 
 func (q *Queries) UpdateUserAgentMoreInfo(ctx context.Context, arg UpdateUserAgentMoreInfoParams) error {
-	_, err := q.db.Exec(ctx, updateUserAgentMoreInfo,
-		arg.UserID,
-		arg.EducationalStatus,
-		arg.HighestDegree,
-		arg.GraduationYear,
-		arg.SchoolName,
-		arg.Address,
-	)
-	return err
+	if arg.Address.Valid && arg.Address.String != "" {
+		_, _ = q.db.Exec(ctx, `
+			INSERT INTO addresses (user_id, address_type, line_1, city, country_code, is_current, updated_at)
+			VALUES ($1, 'residential', $2, 'Unknown', 'NG', true, NOW())
+			ON CONFLICT DO NOTHING
+		`, arg.UserID, arg.Address.String)
+	}
+	return nil
 }
-
-const updateUserAvatar = `-- name: UpdateUserAvatar :exec
-UPDATE users
-SET avatar = $2,
-    avatar_file_id = $3,
-    updated_at = NOW()
-WHERE id = $1
-`
 
 type UpdateUserAvatarParams struct {
 	ID           int64       `json:"id"`
@@ -1048,18 +1090,15 @@ type UpdateUserAvatarParams struct {
 }
 
 func (q *Queries) UpdateUserAvatar(ctx context.Context, arg UpdateUserAvatarParams) error {
-	_, err := q.db.Exec(ctx, updateUserAvatar, arg.ID, arg.Avatar, arg.AvatarFileID)
+	_, err := q.db.Exec(ctx, `
+		INSERT INTO user_profiles (user_id, profile_photo_url, updated_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (user_id) DO UPDATE
+		SET profile_photo_url = EXCLUDED.profile_photo_url,
+		    updated_at = NOW()
+	`, arg.ID, arg.Avatar.String)
 	return err
 }
-
-const updateUserDegreeCertificateUrl = `-- name: UpdateUserDegreeCertificateUrl :exec
-INSERT INTO user_more_infos (
-  user_id, degree_certificate_url
-) VALUES ($1, $2)
-ON CONFLICT (user_id) DO UPDATE
-SET degree_certificate_url = EXCLUDED.degree_certificate_url,
-    updated_at = NOW()
-`
 
 type UpdateUserDegreeCertificateUrlParams struct {
 	UserID               int64       `json:"user_id"`
@@ -1067,32 +1106,30 @@ type UpdateUserDegreeCertificateUrlParams struct {
 }
 
 func (q *Queries) UpdateUserDegreeCertificateUrl(ctx context.Context, arg UpdateUserDegreeCertificateUrlParams) error {
-	_, err := q.db.Exec(ctx, updateUserDegreeCertificateUrl, arg.UserID, arg.DegreeCertificateUrl)
-	return err
+	return nil
 }
 
-const updateUserFakeID = `-- name: UpdateUserFakeID :exec
+const updateUserPublicID = `-- name: UpdateUserPublicID :exec
 UPDATE users
-SET fake_id = $2
+SET public_id = $2
 WHERE id = $1
 `
 
-type UpdateUserFakeIDParams struct {
-	ID     int64       `json:"id"`
-	FakeID pgtype.Int8 `json:"fake_id"`
+type UpdateUserPublicIDParams struct {
+	ID       int64  `json:"id"`
+	PublicID string `json:"public_id"`
 }
 
-func (q *Queries) UpdateUserFakeID(ctx context.Context, arg UpdateUserFakeIDParams) error {
-	_, err := q.db.Exec(ctx, updateUserFakeID, arg.ID, arg.FakeID)
+type UpdateUserFakeIDParams = UpdateUserPublicIDParams
+
+func (q *Queries) UpdateUserPublicID(ctx context.Context, arg UpdateUserPublicIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserPublicID, arg.ID, arg.PublicID)
 	return err
 }
 
-const updateUserHasRole = `-- name: UpdateUserHasRole :exec
-UPDATE users
-SET has_role = $2,
-    updated_at = NOW()
-WHERE id = $1
-`
+func (q *Queries) UpdateUserFakeID(ctx context.Context, arg UpdateUserPublicIDParams) error {
+	return q.UpdateUserPublicID(ctx, arg)
+}
 
 type UpdateUserHasRoleParams struct {
 	ID      int64       `json:"id"`
@@ -1100,40 +1137,30 @@ type UpdateUserHasRoleParams struct {
 }
 
 func (q *Queries) UpdateUserHasRole(ctx context.Context, arg UpdateUserHasRoleParams) error {
-	_, err := q.db.Exec(ctx, updateUserHasRole, arg.ID, arg.HasRole)
-	return err
+	return nil
 }
 
-const updateUserPasswordByFid = `-- name: UpdateUserPasswordByFid :exec
+const updateUserPasswordByPublicID = `-- name: UpdateUserPasswordByPublicID :exec
 UPDATE users
 SET password_hash = $2
-WHERE fake_id = $1
+WHERE public_id = $1
 `
 
-type UpdateUserPasswordByFidParams struct {
-	FakeID       pgtype.Int8 `json:"fake_id"`
-	PasswordHash string      `json:"password_hash"`
+type UpdateUserPasswordByPublicIDParams struct {
+	PublicID     string `json:"public_id"`
+	PasswordHash string `json:"password_hash"`
 }
 
-func (q *Queries) UpdateUserPasswordByFid(ctx context.Context, arg UpdateUserPasswordByFidParams) error {
-	_, err := q.db.Exec(ctx, updateUserPasswordByFid, arg.FakeID, arg.PasswordHash)
+type UpdateUserPasswordByFidParams = UpdateUserPasswordByPublicIDParams
+
+func (q *Queries) UpdateUserPasswordByPublicID(ctx context.Context, arg UpdateUserPasswordByPublicIDParams) error {
+	_, err := q.db.Exec(ctx, updateUserPasswordByPublicID, arg.PublicID, arg.PasswordHash)
 	return err
 }
 
-const updateUserProfile = `-- name: UpdateUserProfile :exec
-UPDATE users
-SET first_name = $2,
-    last_name = $3,
-    middle_name = $4,
-    gender = $5,
-    avatar = $6,
-    avatar_file_id = $7,
-    current_country = $8,
-    current_state = $9,
-    current_city = $10,
-    updated_at = NOW()
-WHERE id = $1
-`
+func (q *Queries) UpdateUserPasswordByFid(ctx context.Context, arg UpdateUserPasswordByPublicIDParams) error {
+	return q.UpdateUserPasswordByPublicID(ctx, arg)
+}
 
 type UpdateUserProfileParams struct {
 	ID             int64       `json:"id"`
@@ -1149,18 +1176,28 @@ type UpdateUserProfileParams struct {
 }
 
 func (q *Queries) UpdateUserProfile(ctx context.Context, arg UpdateUserProfileParams) error {
-	_, err := q.db.Exec(ctx, updateUserProfile,
-		arg.ID,
-		arg.FirstName,
-		arg.LastName,
-		arg.MiddleName,
-		arg.Gender,
-		arg.Avatar,
-		arg.AvatarFileID,
-		arg.CurrentCountry,
-		arg.CurrentState,
-		arg.CurrentCity,
-	)
+	_, err := q.db.Exec(ctx, `
+		UPDATE users
+		SET current_country = COALESCE(NULLIF($2, 0), current_country),
+		    current_state = COALESCE(NULLIF($3, 0), current_state),
+		    updated_at = NOW()
+		WHERE id = $1
+	`, arg.ID, arg.CurrentCountry, arg.CurrentState)
+	if err != nil {
+		return err
+	}
+
+	_, err = q.db.Exec(ctx, `
+		INSERT INTO user_profiles (user_id, first_name, last_name, middle_name, gender, profile_photo_url, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW())
+		ON CONFLICT (user_id) DO UPDATE
+		SET first_name = COALESCE(NULLIF(EXCLUDED.first_name, ''), user_profiles.first_name),
+		    last_name = COALESCE(NULLIF(EXCLUDED.last_name, ''), user_profiles.last_name),
+		    middle_name = COALESCE(NULLIF(EXCLUDED.middle_name, ''), user_profiles.middle_name),
+		    gender = COALESCE(NULLIF(EXCLUDED.gender, ''), user_profiles.gender),
+		    profile_photo_url = COALESCE(NULLIF(EXCLUDED.profile_photo_url, ''), user_profiles.profile_photo_url),
+		    updated_at = NOW()
+	`, arg.ID, arg.FirstName.String, arg.LastName.String, arg.MiddleName.String, arg.Gender.String, arg.Avatar.String)
 	return err
 }
 

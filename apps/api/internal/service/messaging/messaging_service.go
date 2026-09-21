@@ -1,8 +1,8 @@
 package messagingservice
 
 import (
-	"fmt"
 	"chipa/api/internal/logger"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -42,7 +42,7 @@ func (s *MessagingService) SendWhatsAppOTP(phone, otp string) error {
 	log := slog.Default().With("component", logger.ComponentMessagingService)
 	log.Debug(logger.EventSendingOTP, "channel", "whatsapp", "otp", otp) // remove or set to debug for production
 
-	message := fmt.Sprintf("Your Free9ja OTP is: %s", otp)
+	message := fmt.Sprintf("Your Chipa OTP is: %s", otp)
 	to := fmt.Sprintf("whatsapp:%s", phone)
 
 	params := &openapi.CreateMessageParams{}
@@ -62,7 +62,7 @@ func (s *MessagingService) SendSmsOTP(phone, otp string) error {
 	log := slog.Default().With("component", logger.ComponentMessagingService)
 	log.Debug(logger.EventSendingOTP, "channel", "sms", "otp", otp) // remove or set to debug for production
 
-	message := fmt.Sprintf("Your Free9ja OTP is: %s", otp)
+	message := fmt.Sprintf("Your Chipa OTP is: %s", otp)
 
 	params := &openapi.CreateMessageParams{}
 	params.SetTo(phone)

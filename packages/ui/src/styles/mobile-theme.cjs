@@ -1,0 +1,31 @@
+module.exports = {
+	colors: {
+		background: "#FBF6FA",
+		background2: "#F6F6F6",
+		primary: "#FF793F",
+		secondary: "#FDBE4E",
+		primaryAccent: "#E8662E",
+		green: "#009A49",
+		blue: "#46A1F8",
+		border: "#E7EAEB",
+		input: "#EBE8EC",
+		inputActive: "#EBE8EC",
+		mutedForeground: "#71717A",
+		text100: "#000000",
+		text90: "#1A1A1A",
+		text80: "#333333",
+		text70: "#4D4D4D",
+		text60: "#666666",
+		text50: "#7F7F7F",
+		text40: "#999999",
+		red: "#FF4343",
+		lightGreen: "#05C46B",
+	},
+	shadows: {
+		bullet: "0px 0px 4px rgba(0, 0, 0, 0.1)",
+	},
+	radius: {
+		md: "0.5rem",
+		lg: "0.75rem",
+	},
+};

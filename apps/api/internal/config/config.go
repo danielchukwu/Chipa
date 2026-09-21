@@ -41,26 +41,23 @@ type R2Config struct {
 	SecretAccessKey string // R2 API token secret (required)
 	BucketName      string // Target bucket name (required)
 	// PublicURL is the custom domain or r2.dev URL used to build public object URLs.
-	// e.g. "https://files.free9ja.com" or "https://pub-xxx.r2.dev"
+	// e.g. "https://files.chipa.com" or "https://pub-xxx.r2.dev"
 	PublicURL string
 	ZoneID    string // Cloudflare Zone ID for Edge Cache purging
 	APIToken  string // Cloudflare API Token for Edge Cache purging
 }
 
-// MonnifyConfig holds credentials for the Monnify payment gateway.
-// Used for creating reserved virtual accounts and verifying webhook signatures.
-type MonnifyConfig struct {
-	// BaseURL is the Monnify API root.
-	// Sandbox:    https://sandbox.monnify.com
-	// Production: https://api.monnify.com
+// BridgeConfig holds API credentials for Bridge.xyz USD/EUR/GBP BaaS rails.
+type BridgeConfig struct {
+	APIKey  string
 	BaseURL string
+}
 
-	// APIKey and SecretKey are found on the Monnify Dashboard → Settings → API Keys.
-	APIKey    string
+// PaystackConfig holds API credentials for Paystack NGN virtual accounts & verification.
+type PaystackConfig struct {
 	SecretKey string
-
-	// ContractCode identifies your business contract on Monnify.
-	ContractCode string
+	PublicKey string
+	BaseURL   string
 }
 
 // Config holds the complete application configuration.
@@ -71,7 +68,8 @@ type Config struct {
 	Database             DatabaseConfig // Database connection configuration
 	Redis                RedisConfig    // Redis connection configuration
 	R2                   R2Config       // Cloudflare R2 storage configuration
-	Monnify              MonnifyConfig  // Monnify payment gateway configuration
+	Bridge               BridgeConfig   // Bridge.xyz BaaS configuration
+	Paystack             PaystackConfig // Paystack NGN banking configuration
 	GeminiAPIKey         string
 	JWTSecret            string
 	JWTAccessExpiration  time.Duration
@@ -171,7 +169,7 @@ func LoadConfig() (*Config, error) {
 	db_url := utils.FormatPostgresDSN(db_user, db_pass, db_host, db_port, db_name, db_sslmode)
 
 	// jwt secret and expirations
-	jwtSecret := GetEnv("JWT_SECRET", "free9ja_jwt_secret_key_for_dev_only")
+	jwtSecret := GetEnv("JWT_SECRET", "chipa_jwt_secret_key_for_dev_only")
 	jwtAccessExpStr := GetEnv("JWT_ACCESS_EXPIRATION", "15m")
 	jwtRefreshExpStr := GetEnv("JWT_REFRESH_EXPIRATION", "720h") // 30 days in hours
 
@@ -205,11 +203,14 @@ func LoadConfig() (*Config, error) {
 			ZoneID:          GetEnv("CLOUDFLARE_ZONE_ID", ""),
 			APIToken:        GetEnv("CLOUDFLARE_API_TOKEN", ""),
 		},
-		Monnify: MonnifyConfig{
-			BaseURL:      GetEnv("MONNIFY_BASE_URL", "https://sandbox.monnify.com"),
-			APIKey:       GetEnv("MONNIFY_API_KEY", ""),
-			SecretKey:    GetEnv("MONNIFY_SECRET_KEY", ""),
-			ContractCode: GetEnv("MONNIFY_CONTRACT_CODE", ""),
+		Bridge: BridgeConfig{
+			APIKey:  GetEnv("BRIDGE_API_KEY", ""),
+			BaseURL: GetEnv("BRIDGE_BASE_URL", "https://api.bridge.xyz/v0"),
+		},
+		Paystack: PaystackConfig{
+			SecretKey: GetEnv("PAYSTACK_SECRET_KEY", ""),
+			PublicKey: GetEnv("PAYSTACK_PUBLIC_KEY", ""),
+			BaseURL:   GetEnv("PAYSTACK_BASE_URL", "https://api.paystack.co"),
 		},
 		GeminiAPIKey:         GetEnv("GEMINI_API_KEY", ""),
 		JWTSecret:            jwtSecret,
@@ -247,18 +248,21 @@ func GetIntEnv(key string, defaultValue int) int {
 }
 
 func GetEnvPath() (envPath string, envLocalPath string) {
-	// Try local relative path first
 	envPath = ".env"
 	envLocalPath = ".env.local"
 
-	// If relative path doesn't exist, check apps/api/ relative to root, else fallback to hardcoded Windows path
-	if _, err := os.Stat(envPath); os.IsNotExist(err) {
-		if _, err := os.Stat("apps/api/.env"); err == nil {
-			envPath = "apps/api/.env"
-			envLocalPath = "apps/api/.env.local"
-		} else {
-			envPath = "D:/Sz-projects/50-main-projects/3-free9ja/apps/api/.env"
-			envLocalPath = "D:/Sz-projects/50-main-projects/3-free9ja/apps/api/.env.local"
+	candidates := []string{
+		".env",
+		"apps/api/.env",
+		"../.env",
+		"../../.env",
+	}
+
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			envPath = c
+			envLocalPath = c + ".local"
+			break
 		}
 	}
 

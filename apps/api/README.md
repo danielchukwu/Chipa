@@ -1,6 +1,6 @@
-# Free9ja API
+# Chipa API
 
-The backend API for the Free9ja platform, built with Go and the [Chi](https://github.com/go-chi/chi) router.
+The backend API for the Chipa platform, built with Go and the [Chi](https://github.com/go-chi/chi) router.
 
 ## 🚀 Getting Started
 
@@ -48,31 +48,33 @@ The server will start at [http://localhost:4000](http://localhost:4000) by defau
 
 The application can be configured using the following environment variables (typically in a `.env` or `.env.local` file):
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `4000` | The port the server will listen on. |
-| `ENV` | `development` | Environment mode (`development` or `production`). |
-| `DB_USER` | - | PostgreSQL database username. |
-| `DB_PASSWORD` | - | PostgreSQL database password. |
-| `DB_NAME` | - | PostgreSQL database name. |
-| `DB_PORT` | - | PostgreSQL database port (e.g., `5432`). |
-| `REDIS_ADDR` | - | Redis address (e.g., `localhost`). |
-| `REDIS_PORT` | - | Redis port (e.g., `6379`). |
-| `REDIS_PASSWORD` | - | Redis password. |
-| `REDIS_DB` | `0` | Redis database integer. |
-| `IS_CI_CD` | `false` | If `true`, skips loading `.env` files (useful for CI pipelines). |
-| `IS_TESTING`| `false` | If `true`, sets up temporary testcontainers for DB and Redis instead of connecting to local instances. |
+| Variable         | Default       | Description                                                                                            |
+| ---------------- | ------------- | ------------------------------------------------------------------------------------------------------ |
+| `PORT`           | `4000`        | The port the server will listen on.                                                                    |
+| `ENV`            | `development` | Environment mode (`development` or `production`).                                                      |
+| `DB_USER`        | -             | PostgreSQL database username.                                                                          |
+| `DB_PASSWORD`    | -             | PostgreSQL database password.                                                                          |
+| `DB_NAME`        | -             | PostgreSQL database name.                                                                              |
+| `DB_PORT`        | -             | PostgreSQL database port (e.g., `5432`).                                                               |
+| `REDIS_ADDR`     | -             | Redis address (e.g., `localhost`).                                                                     |
+| `REDIS_PORT`     | -             | Redis port (e.g., `6379`).                                                                             |
+| `REDIS_PASSWORD` | -             | Redis password.                                                                                        |
+| `REDIS_DB`       | `0`           | Redis database integer.                                                                                |
+| `IS_CI_CD`       | `false`       | If `true`, skips loading `.env` files (useful for CI pipelines).                                       |
+| `IS_TESTING`     | `false`       | If `true`, sets up temporary testcontainers for DB and Redis instead of connecting to local instances. |
 
 ## 🧪 Testing
 
 The test suite includes both unit tests and integration tests. The integration tests use `testcontainers-go` to spin up isolated PostgreSQL and Redis instances, requiring a running Docker daemon.
 
 To run tests with coverage output:
+
 ```bash
 ./scripts/run_test_with_coverage_output.sh
 ```
 
 To run only short unit tests (skipping Docker-based integration tests):
+
 ```bash
 go test -short ./...
 ```
@@ -167,8 +169,8 @@ This ensures that the correct version and commit are reported in the logs and vi
 The API is containerized using Docker. To build and run the Docker image locally:
 
 ```bash
-docker build -t free9ja-api .
-docker run -p 4000:4000 --env-file .env free9ja-api
+docker build -t chipa-api .
+docker run -p 4000:4000 --env-file .env chipa-api
 ```
 
 The API is deployed using AWS ECS (via Terraform) and includes automated CI/CD pipelines.

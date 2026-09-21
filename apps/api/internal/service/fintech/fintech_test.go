@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"chipa/api/internal/domain"
-	accountprovider "chipa/api/internal/provider/account"
+	"chipa/api/internal/provider/bridge"
 	cardprovider "chipa/api/internal/provider/card"
+	"chipa/api/internal/provider/paystack"
 	vasprovider "chipa/api/internal/provider/vas"
 	"chipa/api/internal/service/fintech"
 
@@ -16,16 +17,17 @@ import (
 )
 
 func setupTestServices() (*fintech.WalletService, *fintech.CardService, *fintech.FXService, *fintech.VASService, *fintech.PINService) {
-	leadBank := accountprovider.NewLeadBankClient("test_key", "test_sec", "http://mock")
-	clearJunction := accountprovider.NewClearJunctionClient("mock_uuid", "mock_sec", "http://mock")
+	bridgeClient := bridge.NewBridgeClient("test_key", "http://mock")
+	paystackClient := paystack.NewPaystackClient("mock_sec", "mock_pub", "http://mock")
 	cardProv := cardprovider.NewSandboxCardProvider()
 	vasProv := vasprovider.NewSandboxVASProvider()
 
-	walletSvc := fintech.NewWalletService(leadBank, clearJunction)
-	cardSvc := fintech.NewCardService(cardProv, walletSvc)
+	ledgerSvc := fintech.NewLedgerService(nil)
+	walletSvc := fintech.NewWalletService(nil, bridgeClient, paystackClient, ledgerSvc)
+	cardSvc := fintech.NewCardService(nil, cardProv, walletSvc, ledgerSvc)
 	fxSvc := fintech.NewFXService(walletSvc)
 	vasSvc := fintech.NewVASService(vasProv, walletSvc)
-	pinSvc := fintech.NewPINService()
+	pinSvc := fintech.NewPINService(nil)
 
 	return walletSvc, cardSvc, fxSvc, vasSvc, pinSvc
 }
@@ -187,3 +189,31 @@ func TestPINService(t *testing.T) {
 	err = pinSvc.SetPIN(ctx, userID, "123")
 	assert.Error(t, err)
 }
+
+func TestKYCService(t *testing.T) {
+	kycSvc := fintech.NewKYCService(nil, nil)
+	ctx := context.Background()
+	userID := int64(606)
+
+	status, err := kycSvc.GetKYCStatus(ctx, userID)
+	require.NoError(t, err)
+	assert.Equal(t, 0, status.CurrentTier)
+	assert.Equal(t, "unverified", status.Status)
+	assert.Len(t, status.Tiers, 4)
+
+	// Validate Tier 1 requires 11-digit BVN or NIN
+	_, err = kycSvc.SubmitTier1(ctx, userID, "", "")
+	assert.Error(t, err)
+
+	_, err = kycSvc.SubmitTier1(ctx, userID, "12345", "")
+	assert.Error(t, err)
+
+	// Validate Tier 2 requires docType & docNumber
+	_, err = kycSvc.SubmitTier2(ctx, userID, "", "", "", "")
+	assert.Error(t, err)
+
+	// Validate Tier 3 requires address and city
+	_, err = kycSvc.SubmitTier3(ctx, userID, "", "", "", "")
+	assert.Error(t, err)
+}
+

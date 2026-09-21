@@ -5,4 +5,6 @@ Chipa
 - Allocate funds to whichever cards
 - Create card options: NGN | USA | EUR | GBP | Duram | Kuwait | UAE | AUS
 - Allow users to Freeze and Unfreeze cards
-- Leads Bank and Clear Junction
+- We will be using bridge.xyz for issueing USD, EUR, GBP accounts and stablecoin wallets.
+- We will be using paystack for local payments.
+

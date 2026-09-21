@@ -1,98 +1,166 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { ChipaLogo } from "@/components/chipa-logo";
+import { AppButton } from "@/components/ui/app-button";
+import { PaginationDots } from "@/components/welcome/pagination-dots";
+import { WELCOME_OFFERINGS, WelcomeOffering } from "@/components/welcome/types";
+import { VisualCard } from "@/components/welcome/visual-card";
+import { useAuth } from "@/context/auth-context";
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
+export default function WelcomeScreen() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/(tabs)/home" as any);
+    }
+  }, [user]);
+  const { width: windowWidth } = useWindowDimensions();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const flatListRef = useRef<FlatList<WelcomeOffering>>(null);
+  const autoPlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-advance carousel every 4.5 seconds if user is not actively touching/dragging
+  useEffect(() => {
+    if (isInteracting) return;
+
+    autoPlayTimerRef.current = setTimeout(() => {
+      const nextIndex = (activeIndex + 1) % WELCOME_OFFERINGS.length;
+      flatListRef.current?.scrollToIndex({
+        index: nextIndex,
+        animated: true,
+      });
+      setActiveIndex(nextIndex);
+    }, 4500);
+
+    return () => {
+      if (autoPlayTimerRef.current) {
+        clearTimeout(autoPlayTimerRef.current);
+      }
+    };
+  }, [activeIndex, isInteracting]);
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const index = Math.round(offsetX / windowWidth);
+      if (
+        index >= 0 &&
+        index < WELCOME_OFFERINGS.length &&
+        index !== activeIndex
+      ) {
+        setActiveIndex(index);
+      }
+    },
+    [windowWidth, activeIndex],
+  );
+
+  const handleDotSelect = useCallback((index: number) => {
+    setActiveIndex(index);
+    flatListRef.current?.scrollToIndex({
+      index,
+      animated: true,
+    });
+  }, []);
+
+  const handleCreateAccount = () => {
+    router.push("/(auth)/register" as any);
+  };
+
+  const handleLogin = () => {
+    router.push("/(auth)/login" as any);
+  };
+
+  const renderOfferingItem = ({ item }: { item: WelcomeOffering }) => {
     return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+      <View
+        className="flex-1 justify-between px-6"
+        style={{ width: windowWidth }}
+      >
+        <View className="mb-4 h-44">
+          <Text className="font-satoshi text-[32px] font-bold mb-2">
+            {item.title}
+          </Text>
+          <Text className="font-sans text-lg font-normal text-gray-600 leading-[22px]">
+            {item.subtitle}
+          </Text>
+        </View>
+
+        <View className="flex-1 items-center justify-center pb-1.5">
+          <VisualCard offering={item} />
+        </View>
+      </View>
     );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+    <SafeAreaView className="flex-1 bg-white" edges={["top", "left", "right"]}>
+      {/* Top Header Logo */}
+      <View className="flex-row items-center px-6 pt-2 pb-3">
+        <ChipaLogo size={42} />
+      </View>
+
+      {/* Offerings Carousel */}
+      <View className="flex-1 justify-center">
+        <FlatList
+          ref={flatListRef}
+          data={WELCOME_OFFERINGS}
+          keyExtractor={(item) => item.id}
+          renderItem={renderOfferingItem}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          onTouchStart={() => setIsInteracting(true)}
+          onTouchEnd={() => setIsInteracting(false)}
+          onScrollBeginDrag={() => setIsInteracting(true)}
+          onScrollEndDrag={() => setIsInteracting(false)}
+          getItemLayout={(_, index) => ({
+            length: windowWidth,
+            offset: windowWidth * index,
+            index,
+          })}
+        />
+      </View>
+
+      {/* Pagination Indicator Dots */}
+      <PaginationDots
+        total={WELCOME_OFFERINGS.length}
+        activeIndex={activeIndex}
+        onSelect={handleDotSelect}
+      />
+
+      {/* Bottom Action Buttons */}
+      <View
+        className="px-6 gap-3"
+        style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+      >
+        <AppButton
+          title="Create an Account"
+          variant="brand"
+          onPress={handleCreateAccount}
+        />
+
+        <AppButton title="Log in" variant="outline" onPress={handleLogin} />
+      </View>
+    </SafeAreaView>
   );
 }
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
-});

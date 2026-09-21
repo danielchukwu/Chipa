@@ -24,6 +24,14 @@ func NewHandler(fxSvc *fintechservice.FXService, pinSvc *fintechservice.PINServi
 	}
 }
 
+// GetRates godoc
+// @Summary Get live FX rates
+// @Description Returns mid-market exchange rates and spreads for NGN, USD, GBP, EUR
+// @Tags FX
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /fx/rates [get]
 func (h *Handler) GetRates(w http.ResponseWriter, r *http.Request) {
 	rates, err := h.fxSvc.GetRates(r.Context())
 	if err != nil {
@@ -42,6 +50,18 @@ type CreateQuoteRequest struct {
 	SendAmount   float64         `json:"send_amount"`
 }
 
+// CreateQuote godoc
+// @Summary Create conversion quote
+// @Description Generates a guaranteed FX quote valid for 60 seconds
+// @Tags FX
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body CreateQuoteRequest true "Quote request payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /fx/quote [post]
 func (h *Handler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 	_, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
 	if !ok {
@@ -70,6 +90,18 @@ type ExecuteSwapRequest struct {
 	PIN     string `json:"pin"`
 }
 
+// ExecuteSwap godoc
+// @Summary Execute currency swap
+// @Description Executes a currency swap using an active quote ID and transaction PIN
+// @Tags FX
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body ExecuteSwapRequest true "Swap execution payload"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /fx/swap [post]
 func (h *Handler) ExecuteSwap(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
 	if !ok {

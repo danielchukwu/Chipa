@@ -10,12 +10,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"chipa/api/internal/db"
 
+	"chipa/api/internal/domain"
 	"chipa/api/internal/service/audit"
 	authservice "chipa/api/internal/service/auth"
-	monnifyclient "chipa/api/internal/service/monnify"
 	permissionsservice "chipa/api/internal/service/permissions"
 	usersservice "chipa/api/internal/service/users"
 
@@ -26,41 +27,30 @@ import (
 
 // UsersService interface defines the methods needed from the users service
 type UsersService interface {
-	GetUserByFakeID(ctx context.Context, fakeID int64) (queries.UserWithPlaces, error)
-	GetUsersByFakeIDs(ctx context.Context, fakeIDs []int64) ([]queries.UserWithPlaces, error)
+	GetUserByFakeID(ctx context.Context, fakeID string) (queries.UserWithPlaces, error)
+	GetUsersByFakeIDs(ctx context.Context, fakeIDs []string) ([]queries.UserWithPlaces, error)
 	GetUserRoles(ctx context.Context, userID int64) (queries.CachedUserRoles, error)
-	AssignUserRole(ctx context.Context, userID int64, fakeID int64, code string, whoAssigned int64) error
+	AssignUserRole(ctx context.Context, userID int64, fakeID string, code string, whoAssigned int64) error
 	GetMoreInfoAboutThisUser(ctx context.Context, userID int64) (queries.UserMoreInfo, error)
-	GetUserPrimaryBankAccount(ctx context.Context, userID int64) (queries.UserBankAccount, error)
 	GetUserVerification(ctx context.Context, userID int64) (queries.UserVerification, error)
-	UpdateUserProfile(ctx context.Context, id int64, fakeID int64, firstName, lastName, middleName, gender, avatar string, avatarFileId *int64, countryID, stateID int16, cityID int32) error
+	UpdateUserProfile(ctx context.Context, id int64, fakeID string, firstName, lastName, middleName, gender, avatar string, avatarFileId *int64, countryID, stateID int16, cityID int32) error
 	UpdateUserProfileDetails(ctx context.Context, userID int64, occupationID *int16, educationalStatus, highestDegree, graduationYear, schoolName, religion, maritalStatus, educationLevel, address string) error
 	ListUsers(ctx context.Context, arg queries.ListUsersParams) ([]queries.ListUsersRow, error)
-	DeleteUserAccount(ctx context.Context, id int64, fakeID int64) error
-	AdminUpdateUser(ctx context.Context, id int64, fakeID int64, firstName, lastName, middleName, username, gender, avatar string, avatarFileId *int64, countryID, stateID int16, cityID int32, stateOfOrigin int16) error
+	DeleteUserAccount(ctx context.Context, id int64, fakeID string) error
+	AdminUpdateUser(ctx context.Context, id int64, fakeID string, firstName, lastName, middleName, username, gender, avatar string, avatarFileId *int64, countryID, stateID int16, cityID int32, stateOfOrigin int16) error
 
-	GetBanks(ctx context.Context) ([]monnifyclient.Bank, error)
+	GetBanks(ctx context.Context) ([]domain.Bank, error)
 	ValidateBankAccount(ctx context.Context, accountNumber string, bankCode string) (string, error)
 
-	CreateUserWallet(ctx context.Context, user queries.User) (queries.UserWallet, error)
-	GetUserWallet(ctx context.Context, userID int64) (queries.UserWallet, error)
-	GetUserWalletTransactions(ctx context.Context, userID int64, limit, offset int32) ([]queries.UserWalletTransaction, error)
-	WithdrawFromUserWallet(ctx context.Context, userID int64, amountKobo int64, transactionReference string, bankAccountNumber, bankCode, narration string) (queries.UserWalletTransaction, error)
-	ProvisionMissingWallets(ctx context.Context) (int, int, error)
-
 	GetUserPhoneNumbersByUserID(ctx context.Context, userID int64) ([]queries.UsersPhoneNumber, error)
-	UpdateUserPhoneNumbers(ctx context.Context, userID int64, fakeID int64, phones []usersservice.PhonePayload) error
+	UpdateUserPhoneNumbers(ctx context.Context, userID int64, fakeID string, phones []usersservice.PhonePayload) error
 	DeleteUserPhoneNumber(ctx context.Context, id int64, userID int64) error
-	GetUserPageVerifications(ctx context.Context, userID int64) ([]queries.GetPageVerificationsRow, error)
 	MakeUserSuperAdmin(ctx context.Context, username string) error
-	CheckUsername(ctx context.Context, username string) (bool, int64)
+	CheckUsername(ctx context.Context, username string) (bool, string)
 	InvalidateUsernameCache(ctx context.Context, username string)
-	UpdateUserRoles(ctx context.Context, userID int64, fakeID int64, roles []string, partyID *int64, whoAssigned int64) error
-	UpdateUserParty(ctx context.Context, userID int64, partyID *int16, fakeID int64) error
-	ListVerificationTypes(ctx context.Context) ([]queries.PageVerificationType, error)
-	GenerateAndAssignReferralCode(ctx context.Context, userID int64, fakeID int64, firstName string) (string, error)
-	GetUserPreferences(ctx context.Context, userID int64) (usersservice.UserPreferencesResponse, error)
-	UpdateUserPreferences(ctx context.Context, userID int64, params usersservice.UpdateUserPreferencesParams) (usersservice.UserPreferencesResponse, error)
+	UpdateUserRoles(ctx context.Context, userID int64, fakeID string, roles []string, partyID *int64, whoAssigned int64) error
+	UpdateUserParty(ctx context.Context, userID int64, partyID *int16, fakeID string) error
+	GenerateAndAssignReferralCode(ctx context.Context, userID int64, fakeID string, firstName string) (string, error)
 }
 
 // PermissionsService interface defines the methods needed from the permissions service
@@ -91,14 +81,12 @@ func NewHandler(usersService UsersService, auditService audit.AuditService, perm
 // UserProfileResponse represents the complete user profile details returned to the frontend
 type UserProfileResponse struct {
 	queries.UserWithPlaces
-	Profile           *queries.UserMoreInfo `json:"profile,omitempty"`
-	BankAccountNumber string                `json:"bank_account_number"`
-	BankCode          string                `json:"bank_code"`
+	Profile *queries.UserMoreInfo `json:"profile,omitempty"`
 }
 
 // GetBanks handles GET /api/v1/banks
 // @Summary      Get list of banks
-// @Description  Returns a list of real Nigerian banks from Monnify
+// @Description  Returns a list of real Nigerian banks from Paystack
 // @Tags         Banks
 // @Accept       json
 // @Produce      json
@@ -119,7 +107,7 @@ func (h *Handler) GetBanks(w http.ResponseWriter, r *http.Request) {
 
 // ValidateBankAccount handles GET /api/v1/banks/validate
 // @Summary      Validate bank account
-// @Description  Validates account number and bank code via Monnify, returning the account name
+// @Description  Validates account number and bank code via Paystack, returning the account name
 // @Tags         Banks
 // @Accept       json
 // @Produce      json
@@ -149,9 +137,81 @@ func (h *Handler) ValidateBankAccount(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// MeResponse is the clean, fintech-grade shape returned to the authenticated user.
+// It intentionally excludes internal DB IDs, election-specific fields, password hashes,
+// and admin-only data. Think Cleva / Raenest / Stripe — only what the user needs.
+type MeResponse struct {
+	ID             string   `json:"id"`               // public_id
+	Email          string   `json:"email"`
+	Phone          string   `json:"phone,omitempty"`
+	Username       string   `json:"username,omitempty"`
+	FirstName      string   `json:"first_name"`
+	LastName       string   `json:"last_name"`
+	MiddleName     string   `json:"middle_name,omitempty"`
+	Avatar         string   `json:"avatar,omitempty"`
+	Gender         string   `json:"gender,omitempty"`
+	DateOfBirth    string   `json:"date_of_birth,omitempty"`
+	ReferralCode   string   `json:"referral_code,omitempty"`
+	AccountStatus  string   `json:"account_status"`
+	IsVerified     bool     `json:"is_verified"`
+	CurrentCountry int16    `json:"current_country,omitempty"`
+	CurrentState   int16    `json:"current_state,omitempty"`
+	CurrentCity    int32    `json:"current_city,omitempty"`
+	CountryName    string   `json:"country_name,omitempty"`
+	StateName      string   `json:"state_name,omitempty"`
+	CityName       string   `json:"city_name,omitempty"`
+	Roles          []string `json:"roles"`
+	CreatedAt      string   `json:"created_at"`
+	UpdatedAt      string   `json:"updated_at"`
+}
+
+// buildMeResponse maps a UserWithPlaces onto the clean MeResponse shape.
+func buildMeResponse(u queries.UserWithPlaces) MeResponse {
+	dob := ""
+	if u.DateOfBirth.Valid {
+		dob = u.DateOfBirth.Time.Format("2006-01-02")
+	}
+	createdAt := ""
+	if u.CreatedAt.Valid {
+		createdAt = u.CreatedAt.Time.Format(time.RFC3339)
+	}
+	updatedAt := ""
+	if u.UpdatedAt.Valid {
+		updatedAt = u.UpdatedAt.Time.Format(time.RFC3339)
+	}
+	roles := u.Roles.RolesCode
+	if roles == nil {
+		roles = []string{}
+	}
+	return MeResponse{
+		ID:             u.PublicID,
+		Email:          u.Email.String,
+		Phone:          u.Phone.String,
+		Username:       u.Username.String,
+		FirstName:      u.FirstName.String,
+		LastName:       u.LastName.String,
+		MiddleName:     u.MiddleName.String,
+		Avatar:         u.Avatar.String,
+		Gender:         u.Gender.String,
+		DateOfBirth:    dob,
+		ReferralCode:   u.ReferralCode.String,
+		AccountStatus:  u.AccountStatus.String,
+		IsVerified:     u.IsVerified.Bool,
+		CurrentCountry: u.CurrentCountry,
+		CurrentState:   u.CurrentState,
+		CurrentCity:    u.CurrentCity.Int32,
+		CountryName:    u.CountryName,
+		StateName:      u.StateName,
+		CityName:       u.CityName,
+		Roles:          roles,
+		CreatedAt:      createdAt,
+		UpdatedAt:      updatedAt,
+	}
+}
+
 // GetMe handles GET /api/v1/users/me
 // @Summary      Get current user profile
-// @Description  Fetches the profile details of the currently authenticated user
+// @Description  Fetches the profile of the currently authenticated user
 // @Tags         Users
 // @Accept       json
 // @Produce      json
@@ -166,22 +226,14 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.usersService.GetUserByFakeID(r.Context(), claims.FakeID)
+	user, err := h.usersService.GetUserByFakeID(r.Context(), claims.PublicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
 	}
 
-	profile, _ := h.usersService.GetMoreInfoAboutThisUser(r.Context(), user.ID)
-	bankAccount, _ := h.usersService.GetUserPrimaryBankAccount(r.Context(), user.ID)
-
 	h.utils.RespondSuccess(w, http.StatusOK, "User profile retrieved successfully", map[string]interface{}{
-		"user": UserProfileResponse{
-			UserWithPlaces:    user,
-			Profile:           &profile,
-			BankAccountNumber: bankAccount.AccountNumber,
-			BankCode:          bankAccount.BankCode,
-		},
+		"user": buildMeResponse(user),
 	})
 }
 
@@ -228,7 +280,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.usersService.GetUserByFakeID(r.Context(), claims.FakeID)
+	user, err := h.usersService.GetUserByFakeID(r.Context(), claims.PublicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -242,7 +294,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	err = h.usersService.UpdateUserProfile(
 		r.Context(),
 		user.ID,
-		claims.FakeID,
+		claims.PublicID,
 		req.FirstName,
 		req.LastName,
 		req.MiddleName,
@@ -359,28 +411,9 @@ func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// sorting based on verification types
+	// sorting based on verification types (legacy no-op)
 	var verificationTypesSlice []int16
-	if verificationTypes != "" {
-		allTypes, err := h.usersService.ListVerificationTypes(r.Context())
-		if err != nil {
-			h.utils.RespondError(w, http.StatusInternalServerError, "Failed to fetch verification types: "+err.Error())
-			return
-		}
-
-		// Create a map for fast lookup: "vip_verified" -> ID
-		typeMap := make(map[string]int16)
-		for _, t := range allTypes {
-			typeMap[t.VerificationType] = t.ID
-		}
-
-		for v := range strings.SplitSeq(verificationTypes, ",") {
-			v = strings.TrimSpace(v)
-			if id, exists := typeMap[v]; exists {
-				verificationTypesSlice = append(verificationTypesSlice, id)
-			}
-		}
-	}
+	_ = verificationTypes
 
 	// sorting based on country
 	var countryIDsSlice []int16
@@ -420,7 +453,7 @@ func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	// 4. Determine Data Isolation (Party Admin vs Super Admin)
 	if claims.HasAnyRole("party_admin", "super_party_admin") && !claims.HasAnyRole("super_admin", "admin") {
 		// If the user is a party admin, restrict their view to their own party's users
-		currentUser, err := h.usersService.GetUserByFakeID(r.Context(), claims.FakeID)
+		currentUser, err := h.usersService.GetUserByFakeID(r.Context(), claims.PublicID)
 		if err != nil {
 			h.utils.RespondError(w, http.StatusInternalServerError, "Failed to fetch your details: "+err.Error())
 			return
@@ -485,16 +518,16 @@ func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		nextCursor = strconv.FormatInt(paginatedUsers[len(paginatedUsers)-1].ID, 10)
 	}
 
-	// Collect fake_ids for bulk fetching
-	fakeIDs := make([]int64, 0, len(paginatedUsers))
+	// Collect public_ids for bulk fetching
+	publicIDs := make([]string, 0, len(paginatedUsers))
 	for _, u := range paginatedUsers {
-		if u.FakeID.Valid {
-			fakeIDs = append(fakeIDs, u.FakeID.Int64)
+		if u.PublicID != "" {
+			publicIDs = append(publicIDs, u.PublicID)
 		}
 	}
 
 	// Fetch users efficiently via MGET + concurrent DB queries
-	fullUsers, err := h.usersService.GetUsersByFakeIDs(r.Context(), fakeIDs)
+	fullUsers, err := h.usersService.GetUsersByFakeIDs(r.Context(), publicIDs)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusInternalServerError, "Failed to fetch detailed user profiles: "+err.Error())
 		return
@@ -519,14 +552,13 @@ func (h *Handler) DeleteUserAccount(w http.ResponseWriter, r *http.Request) {
 
 	// Parse the target user ID from the URL parameters
 	idStr := chi.URLParam(r, "id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
+	if idStr == "" {
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	// Fetch the target user's details from the database using their public (fake) ID
-	userDetails, err := h.usersService.GetUserByFakeID(r.Context(), id)
+	userDetails, err := h.usersService.GetUserByFakeID(r.Context(), idStr)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -544,7 +576,7 @@ func (h *Handler) DeleteUserAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Proceed with soft-deleting the user from the database
-	err = h.usersService.DeleteUserAccount(r.Context(), userDetails.ID, userDetails.FakeID.Int64)
+	err = h.usersService.DeleteUserAccount(r.Context(), userDetails.ID, userDetails.PublicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusInternalServerError, "Failed to delete user: "+err.Error())
 		return
@@ -580,11 +612,10 @@ func (h *Handler) DeleteUserAccount(w http.ResponseWriter, r *http.Request) {
 
 // AdminGetUserMoreInfo handles GET /api/v1/admin/users/{id}/more-info
 func (h *Handler) AdminGetUserMoreInfo(w http.ResponseWriter, r *http.Request) {
-	// Parse the target user's fake ID from the URL parameters
-	fakeIDStr := chi.URLParam(r, "id")
-	fakeID, err := strconv.ParseInt(fakeIDStr, 10, 64)
-	if err != nil {
-		h.utils.RespondError(w, http.StatusBadRequest, "Invalid fake ID")
+	// Parse the target user's public ID from the URL parameters
+	publicID := chi.URLParam(r, "id")
+	if publicID == "" {
+		h.utils.RespondError(w, http.StatusBadRequest, "User ID is required")
 		return
 	}
 
@@ -594,8 +625,8 @@ func (h *Handler) AdminGetUserMoreInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Retrieve the target user's details from the database using their fake ID
-	targetUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), fakeID)
+	// Retrieve the target user's details from the database using their public ID
+	targetUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), publicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "Target user not found")
 		return
@@ -630,13 +661,13 @@ func (h *Handler) GenerateReferralCode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.usersService.GetUserByFakeID(r.Context(), claims.FakeID)
+	user, err := h.usersService.GetUserByFakeID(r.Context(), claims.PublicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
 	}
 
-	code, err := h.usersService.GenerateAndAssignReferralCode(r.Context(), user.ID, claims.FakeID, user.FirstName.String)
+	code, err := h.usersService.GenerateAndAssignReferralCode(r.Context(), user.ID, claims.PublicID, user.FirstName.String)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusInternalServerError, "Failed to generate referral code: "+err.Error())
 		return
@@ -671,15 +702,14 @@ func (h *Handler) AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the target user ID from the URL parameters
-	fakeIdStr := chi.URLParam(r, "id")
-	fakeID, err := strconv.ParseInt(fakeIdStr, 10, 64)
-	if err != nil {
+	publicID := chi.URLParam(r, "id")
+	if publicID == "" {
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	// Fetch the target user's current details from the database
-	targetUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), fakeID)
+	targetUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), publicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -738,7 +768,7 @@ func (h *Handler) AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 		// If the party is changing (or being set for the first time), update it
 		if !targetUserDetails.PartyID.Valid || req.PartyID != int64(targetUserDetails.PartyID.Int16) {
 			pID := int16(req.PartyID)
-			if err := h.usersService.UpdateUserParty(r.Context(), targetUserDetails.ID, &pID, targetUserDetails.FakeID.Int64); err != nil {
+			if err := h.usersService.UpdateUserParty(r.Context(), targetUserDetails.ID, &pID, targetUserDetails.PublicID); err != nil {
 				h.utils.RespondError(w, http.StatusInternalServerError, "Failed to update user party: "+err.Error())
 				return
 			}
@@ -749,7 +779,7 @@ func (h *Handler) AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 	err = h.usersService.AdminUpdateUser(
 		r.Context(),
 		targetUserDetails.ID,
-		targetUserDetails.FakeID.Int64,
+		targetUserDetails.PublicID,
 		req.FirstName,
 		req.LastName,
 		req.MiddleName,
@@ -775,7 +805,7 @@ func (h *Handler) AdminUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 
 	// Fetch the new user state for accurate logging
-	updatedUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), targetUserDetails.FakeID.Int64)
+	updatedUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), targetUserDetails.PublicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusInternalServerError, "Failed to get user: "+err.Error())
 		return
@@ -830,15 +860,14 @@ func (h *Handler) AdminUpdateUserMoreInfo(w http.ResponseWriter, r *http.Request
 	}
 
 	// Parse the target user ID from the URL parameters
-	fakeIdStr := chi.URLParam(r, "id")
-	fakeID, err := strconv.ParseInt(fakeIdStr, 10, 64)
-	if err != nil {
+	publicID := chi.URLParam(r, "id")
+	if publicID == "" {
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid user ID")
 		return
 	}
 
 	// Fetch the target user's current details from the database
-	targetUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), fakeID)
+	targetUserDetails, err := h.usersService.GetUserByFakeID(r.Context(), publicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -937,14 +966,13 @@ func (h *Handler) GetUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 
 	// get the id from the url
 	idStr := chi.URLParam(r, "id")
-	userFakeID, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
+	if idStr == "" {
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid user ID format")
 		return
 	}
 
-	// get the user details using the fake id
-	userDetails, err := h.usersService.GetUserByFakeID(r.Context(), userFakeID)
+	// get the user details using the public id
+	userDetails, err := h.usersService.GetUserByFakeID(r.Context(), idStr)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -1011,8 +1039,7 @@ func (h *Handler) UpdateUserPhoneNumbers(w http.ResponseWriter, r *http.Request)
 
 	// Extract and parse user ID from URL
 	idStr := chi.URLParam(r, "id")
-	userFakeID, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
+	if idStr == "" {
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid user ID format")
 		return
 	}
@@ -1025,7 +1052,7 @@ func (h *Handler) UpdateUserPhoneNumbers(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Fetch target user details
-	userDetails, err := h.usersService.GetUserByFakeID(r.Context(), userFakeID)
+	userDetails, err := h.usersService.GetUserByFakeID(r.Context(), idStr)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -1079,7 +1106,7 @@ func (h *Handler) UpdateUserPhoneNumbers(w http.ResponseWriter, r *http.Request)
 		}
 
 		// Update phone numbers in the database
-		err = h.usersService.UpdateUserPhoneNumbers(r.Context(), userDetails.ID, userFakeID, req.Phones)
+		err = h.usersService.UpdateUserPhoneNumbers(r.Context(), userDetails.ID, userDetails.PublicID, req.Phones)
 		if err != nil {
 			h.utils.RespondError(w, http.StatusInternalServerError, "Failed to update phone numbers: "+err.Error())
 			return
@@ -1113,13 +1140,13 @@ func (h *Handler) UpdateUserPhoneNumbers(w http.ResponseWriter, r *http.Request)
 	// return phone numbers for UI to update the cached version
 	h.utils.RespondSuccess(w, http.StatusOK, "Phone numbers updated successfully", map[string]interface{}{
 		"phones":   updatedPhones,
-		"user_fid": userFakeID,
+		"user_fid": userDetails.PublicID,
 	})
 }
 
 type DeleteUserPhoneNumberRequest struct {
-	PhoneID int64 `json:"phone_id" validate:"required"`
-	UserFid int64 `json:"user_fid" validate:"required"`
+	PhoneID int64  `json:"phone_id" validate:"required"`
+	UserFid string `json:"user_fid" validate:"required"`
 }
 
 // DeleteUserPhoneNumber handles DELETE /api/v1/admin/users/phones/{id}
@@ -1271,7 +1298,7 @@ func (h *Handler) MakeUserSuperAdmin(w http.ResponseWriter, r *http.Request) {
 
 // UpdateUserRolesRequest represents the request to completely replace a user's roles
 type UpdateUserRolesRequest struct {
-	UserFakeID *int64   `json:"user_fid" validate:"omitempty"`
+	UserFakeID *string  `json:"user_fid" validate:"omitempty"`
 	Roles      []string `json:"roles" validate:"required"`
 	PartyID    *int64   `json:"party_id" validate:"omitempty"`
 }

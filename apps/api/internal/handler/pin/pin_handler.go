@@ -25,6 +25,18 @@ type SetPINRequest struct {
 	PIN string `json:"pin"`
 }
 
+// SetPIN godoc
+// @Summary Set transaction PIN
+// @Description Sets a 4-digit transaction PIN for the authenticated user
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body SetPINRequest true "Transaction PIN"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /users/pin/set [post]
 func (h *Handler) SetPIN(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
 	if !ok {
@@ -49,6 +61,18 @@ type VerifyPINRequest struct {
 	PIN string `json:"pin"`
 }
 
+// VerifyPIN godoc
+// @Summary Verify transaction PIN
+// @Description Verifies a 4-digit transaction PIN for the authenticated user
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body VerifyPINRequest true "Transaction PIN"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /users/pin/verify [post]
 func (h *Handler) VerifyPIN(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
 	if !ok {

@@ -11,10 +11,13 @@ const (
 	// RedisOneMonthTTL  = 30 * 24 * time.Hour
 
 	//--START-- for registration
-	// STRING: Keys used to map registration details to user fake ID
-	RedisUsernameFakeID           = "register:username_user_fake_id:"
-	RedisEmailFakeID              = "register:email_user_fake_id:"
-	RedisPhoneFakeID              = "register:phone_user_fake_id:"
+	// STRING: Keys used to map registration details to user public ID
+	RedisUsernamePublicID         = "register:username_user_public_id:"
+	RedisEmailPublicID            = "register:email_user_public_id:"
+	RedisPhonePublicID            = "register:phone_user_public_id:"
+	RedisUsernameFakeID           = RedisUsernamePublicID
+	RedisEmailFakeID              = RedisEmailPublicID
+	RedisPhoneFakeID              = RedisPhonePublicID
 	RedisUserNINQuickSearch       = "register:user_nin_quick_search:"
 	RedisRegisterEmailOtp         = "register:email_otp:"
 	RedisRegisterEmailOtpVerified = "register:email_otp_verified:"
@@ -33,6 +36,7 @@ const (
 
 	// STRING: "jwt:user_login_locked:<userFakeID>" key used to lock token generation.
 	RedisJwtUserLoginLocked = "jwt:user_login_locked:"
+	RedisLoginPreAuth       = "auth:preauth:"
 	//--END--
 
 	//--START-- for user

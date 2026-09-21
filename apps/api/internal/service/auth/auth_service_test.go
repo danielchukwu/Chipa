@@ -43,3 +43,32 @@ func TestCleanUsername(t *testing.T) {
 		})
 	}
 }
+
+func TestLoginTwoStepValidation(t *testing.T) {
+	svc := authservice.NewAuthService(nil, nil, nil, nil, nil, "test_secret", 0, 0)
+
+	// Step 1: empty identifier
+	_, err := svc.LoginCredentials(t.Context(), "", "secret123", "email", "NG")
+	if err == nil {
+		t.Errorf("expected error for empty identifier, got nil")
+	}
+
+	// Step 1: empty password
+	_, err = svc.LoginCredentials(t.Context(), "user@example.com", "", "email", "NG")
+	if err == nil {
+		t.Errorf("expected error for empty password, got nil")
+	}
+
+	// Step 2: empty preAuthToken
+	_, err = svc.LoginPin(t.Context(), "", "1234")
+	if err == nil {
+		t.Errorf("expected error for empty preAuthToken, got nil")
+	}
+
+	// Step 2: invalid PIN length
+	_, err = svc.LoginPin(t.Context(), "pat_123", "12")
+	if err == nil {
+		t.Errorf("expected error for invalid PIN length, got nil")
+	}
+}
+

@@ -58,7 +58,8 @@ FROM roles r, role_permissions p
 WHERE r.code = 'super_party_admin' AND p.code IN ('manage_parties', 'manage_party_members', 'manage_elections');
 
 -- +goose Down
-DROP TABLE IF EXISTS role_assigned_permissions;
-DROP TABLE IF EXISTS roles;
-DROP TABLE IF EXISTS role_permissions;
-DROP TABLE IF EXISTS user_roles;
+DROP TABLE IF EXISTS user_roles CASCADE;
+DROP TABLE IF EXISTS role_assigned_permissions CASCADE;
+DROP TABLE IF EXISTS roles CASCADE;
+DROP TABLE IF EXISTS role_permissions CASCADE;
+

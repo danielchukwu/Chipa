@@ -78,7 +78,7 @@ func (s *PermissionsService) CheckUserModificationPermission(claims *utils.JWTCl
 		IsNormalAdmin:          claims.HasRole("admin"),
 		IsBothAdmin:            claims.HasAnyRole("admin", "super_admin"),
 		IsOwnerOfAccount:       claims.UserID == userDetails.ID,
-		OwnerIsVerified:        userDetails.IsVerified.Bool && len(userDetails.Verifications) > 0,
+		OwnerIsVerified:        userDetails.IsVerified.Bool,
 		IsPartyAdminWithRights: claims.HasAnyRole("party_admin", "super_party_admin") && userDetails.PartyID.Int16 == claims.PartyID && userDetails.AccountStatus.String == "placeholder",
 	}
 

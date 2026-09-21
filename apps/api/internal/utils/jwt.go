@@ -15,7 +15,7 @@ import (
 // JWTClaims represents the custom claims payload for JWTs
 type JWTClaims struct {
 	UserID    int64    `json:"user_id"`
-	FakeID    int64    `json:"fake_id"`
+	PublicID  string   `json:"public_id"`
 	Username  string   `json:"username"`
 	Roles     []string `json:"roles"`
 	PartyID   int16    `json:"party_id,omitempty"`
@@ -43,14 +43,14 @@ func (c *JWTClaims) HasAnyRole(roles ...string) bool {
 }
 
 // GenerateToken creates a signed JWT with the given claims, secret, and duration.
-func GenerateToken(userID int64, fakeID int64, username string, roles []string, secret string, duration time.Duration, partyID ...int16) (string, error) {
+func GenerateToken(userID int64, publicID string, username string, roles []string, secret string, duration time.Duration, partyID ...int16) (string, error) {
 	var pid int16
 	if len(partyID) > 0 {
 		pid = partyID[0]
 	}
 	claims := JWTClaims{
 		UserID:    userID,
-		FakeID:    fakeID,
+		PublicID:  publicID,
 		Username:  username,
 		Roles:     roles,
 		PartyID:   pid,

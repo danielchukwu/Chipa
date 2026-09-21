@@ -1,0 +1,6 @@
+QA:
+- Code structure should be optimal and follow best standards
+- Add all the components you know should be reusable and varaints if they are the industry standard way of coding expo apps, else follow industry standard approach for building expo apps.
+- components should be placed in /mobile/src/components 
+- The app is for both android and IOS so use best tools for the job that works best for both platforms
+

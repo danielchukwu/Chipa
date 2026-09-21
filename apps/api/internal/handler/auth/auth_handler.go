@@ -8,8 +8,6 @@ import (
 	auth "chipa/api/internal/service/auth"
 	"chipa/api/internal/utils"
 	"net/http"
-
-	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -17,28 +15,32 @@ import (
 )
 
 type AuthService interface {
-	Signup(ctx context.Context, email, phone, password string, countryID int16) (auth.SignupResult, error)
+	Signup(ctx context.Context, email, phone, password string, countryID int16, emailVerificationToken ...string) (auth.SignupResult, error)
 	SendSignupEmailOTP(ctx context.Context, email string) (auth.EmailOTPResult, error)
 	VerifySignupEmailOTP(ctx context.Context, email, otp string) (auth.EmailOTPResult, error)
 	SendForgotPasswordEmailOTP(ctx context.Context, email string) (auth.EmailOTPResult, error)
-	CompleteOnboarding(ctx context.Context, userID int64, fakeID int64, params queries.UpdateOnboardingProfileParams, referrerUserID *int64, nin string) error
+	SendPhoneOTP(ctx context.Context, userID int64, phone, channel, iso2 string) error
+	VerifyPhoneOTP(ctx context.Context, userID int64, phone, otp, iso2 string) error
+	UpdateOnboardingProfile(ctx context.Context, userID int64, params auth.OnboardingProfileParams) error
+	CompleteOnboarding(ctx context.Context, userID int64, publicID string, params queries.UpdateOnboardingProfileParams, referrerUserID *int64, nin string) error
 	CheckNIN(ctx context.Context, nin string) bool
 	CheckUsername(ctx context.Context, username string) bool
 	CheckReferralCode(ctx context.Context, code string) (bool, string, int64)
 	Login(ctx context.Context, identifierType, identifier, password, iso2 string, allowedRoles ...string) (auth.LoginResult, error)
+	LoginCredentials(ctx context.Context, identifier, password, identifierType, iso2 string) (auth.LoginCredentialsResult, error)
+	LoginPin(ctx context.Context, preAuthToken, pin string) (auth.LoginResult, error)
 	Refresh(ctx context.Context, refreshToken string) (auth.RefreshResult, error)
 	Logout(ctx context.Context, refreshToken string) error
+	GetCountryIDByIso2(ctx context.Context, iso2 string) (int16, error)
 	ChangePasswordByEmail(ctx context.Context, email, otp, newPassword string) error
-	RegisterCandidatePlaceholder(ctx context.Context, email, password, firstName, lastName, middleName, username, gender, avatar string, avatarFileId *int64, dob time.Time, countryID, stateID int16, currentCity int32, stateOfOrigin int16, partyID int64) (auth.RegisterResult, error)
-	GetUserDetailsByFakeID(ctx context.Context, fakeID int64) (queries.UserWithPlaces, error)
+	GetUserDetailsByFakeID(ctx context.Context, fakeID string) (queries.UserWithPlaces, error)
 }
 
 // UsersService interface defines the methods from UsersService that the auth handler needs
 type UsersService interface {
 	CheckNIN(ctx context.Context, nin string) bool
-	CheckUsername(ctx context.Context, username string) (bool, int64)
-	CheckEmail(ctx context.Context, email string) (bool, int64)
-	CreateUserWallet(ctx context.Context, user queries.User) (queries.UserWallet, error)
+	CheckUsername(ctx context.Context, username string) (bool, string)
+	CheckEmail(ctx context.Context, email string) (bool, string)
 	GenerateUniqueReferralCode(ctx context.Context, firstName string) (string, error)
 }
 
@@ -67,12 +69,59 @@ func NewHandler(authService AuthService, usersService UsersService, filesService
 	}
 }
 
-// SignupRequest represents the structure for the basic sign-up phase
+// SignupRequest represents the structure for Phase 1 basic sign-up
 type SignupRequest struct {
-	CountryID   int16  `json:"countryId" validate:"required"`
-	PhoneNumber string `json:"phoneNumber" validate:"required"`
-	Email       string `json:"email" validate:"required,email"`
-	Password    string `json:"password" validate:"required,min=5,max=72"`
+	CountryID        int16  `json:"countryId" validate:"required" example:"161"`
+	Email            string `json:"email" validate:"required,email" example:"user@example.com"`
+	Password         string `json:"password" validate:"required,min=5,max=72" example:"SecurePassword123!"`
+	VerificationCode string `json:"verificationCode" validate:"required" example:"123456"`
+}
+
+// UnmarshalJSON provides seamless backward-compatibility for snake_case (country_id, verification_code)
+// and token aliases without exposing redundant fields in the public Swagger/OpenAPI documentation.
+func (r *SignupRequest) UnmarshalJSON(data []byte) error {
+	type Alias SignupRequest
+	aux := struct {
+		*Alias
+		CountryIDSnake          *int16  `json:"country_id"`
+		CountryCode             *string `json:"countryCode"`
+		CountryCodeSnake        *string `json:"country_code"`
+		VerificationCodeSnake   *string `json:"verification_code"`
+		EmailVerificationToken  *string `json:"emailVerificationToken"`
+		EmailVerificationTokenS *string `json:"email_verification_token"`
+		EmailVerificationCode   *string `json:"emailVerificationCode"`
+		EmailVerificationCodeS  *string `json:"email_verification_code"`
+		OTP                     *string `json:"otp"`
+		Code                    *string `json:"code"`
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if r.CountryID <= 0 && aux.CountryIDSnake != nil && *aux.CountryIDSnake > 0 {
+		r.CountryID = *aux.CountryIDSnake
+	}
+	if r.VerificationCode == "" {
+		if aux.VerificationCodeSnake != nil && *aux.VerificationCodeSnake != "" {
+			r.VerificationCode = *aux.VerificationCodeSnake
+		} else if aux.EmailVerificationToken != nil && *aux.EmailVerificationToken != "" {
+			r.VerificationCode = *aux.EmailVerificationToken
+		} else if aux.EmailVerificationTokenS != nil && *aux.EmailVerificationTokenS != "" {
+			r.VerificationCode = *aux.EmailVerificationTokenS
+		} else if aux.EmailVerificationCode != nil && *aux.EmailVerificationCode != "" {
+			r.VerificationCode = *aux.EmailVerificationCode
+		} else if aux.EmailVerificationCodeS != nil && *aux.EmailVerificationCodeS != "" {
+			r.VerificationCode = *aux.EmailVerificationCodeS
+		} else if aux.OTP != nil && *aux.OTP != "" {
+			r.VerificationCode = *aux.OTP
+		} else if aux.Code != nil && *aux.Code != "" {
+			r.VerificationCode = *aux.Code
+		}
+	}
+	return nil
 }
 
 type VerifySignupEmailOTPRequest struct {
@@ -81,8 +130,8 @@ type VerifySignupEmailOTPRequest struct {
 }
 
 // Signup godoc
-// @Summary Basic sign-up
-// @Description Handles the basic user registration (phone, email, password, country)
+// @Summary Basic sign-up (Phase 1)
+// @Description Handles initial registration with country ID, email, password, and verification code
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -99,14 +148,19 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate required fields (email, phone, password, country)
+	// Validate required fields (countryId, email, password, verificationCode)
 	if err := h.validate.Struct(req); err != nil {
 		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.Error())
 		return
 	}
 
+	countryID := req.CountryID
+	if countryID <= 0 {
+		countryID = 161 // default to Nigeria in c_countries
+	}
+
 	// Delegate business logic to create the user and generate authentication tokens
-	result, err := h.authService.Signup(r.Context(), req.Email, req.PhoneNumber, req.Password, req.CountryID)
+	result, err := h.authService.Signup(r.Context(), req.Email, "", req.Password, countryID, req.VerificationCode)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
 		return
@@ -118,7 +172,6 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
 		"accessToken":  result.AccessToken,
 		"refreshToken": result.RefreshToken,
 		"user":         result.User,
-		"preferences":  result.Preferences,
 	})
 }
 
@@ -126,7 +179,16 @@ type SendSignupEmailOTPRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
-// SendSignupEmailOTP handles the request to send an OTP to a new user's email during signup
+// SendSignupEmailOTP godoc
+// @Summary Send signup email OTP
+// @Description Sends a 6-digit verification OTP to a new user's email during registration
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body SendSignupEmailOTPRequest true "Email OTP request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /auth/signup/email-otp [post]
 func (h *Handler) SendSignupEmailOTP(w http.ResponseWriter, r *http.Request) {
 	var req SendSignupEmailOTPRequest
 
@@ -157,7 +219,16 @@ func (h *Handler) SendSignupEmailOTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// VerifySignupEmailOTP handles the request to verify the OTP sent to a new user's email during signup
+// VerifySignupEmailOTP godoc
+// @Summary Verify signup email OTP
+// @Description Verifies the OTP sent to a new user's email during registration
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body VerifySignupEmailOTPRequest true "Verify email OTP request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /auth/signup/email-otp/verify [post]
 func (h *Handler) VerifySignupEmailOTP(w http.ResponseWriter, r *http.Request) {
 	var req VerifySignupEmailOTPRequest
 
@@ -188,7 +259,16 @@ func (h *Handler) VerifySignupEmailOTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// SendForgotPasswordEmailOTP handles the request to send an OTP for password recovery
+// SendForgotPasswordEmailOTP godoc
+// @Summary Send forgot password email OTP
+// @Description Sends an OTP for password recovery
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body SendSignupEmailOTPRequest true "Email OTP request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Router /auth/forgot-password/email-otp [post]
 func (h *Handler) SendForgotPasswordEmailOTP(w http.ResponseWriter, r *http.Request) {
 	var req SendSignupEmailOTPRequest
 
@@ -289,7 +369,7 @@ func (h *Handler) CompleteOnboarding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Fetch the DB user
-	user, err := h.authService.GetUserDetailsByFakeID(ctx, claims.FakeID)
+	user, err := h.authService.GetUserDetailsByFakeID(ctx, claims.PublicID)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, "User not found")
 		return
@@ -331,7 +411,7 @@ func (h *Handler) CompleteOnboarding(w http.ResponseWriter, r *http.Request) {
 		ReferralCode:    pgtype.Text{String: myReferralCode, Valid: myReferralCode != ""},
 	}
 
-	if err = h.authService.CompleteOnboarding(r.Context(), user.ID, user.FakeID.Int64, params, req.ReferrerUserId, req.Nin); err != nil {
+	if err = h.authService.CompleteOnboarding(r.Context(), user.ID, user.PublicID, params, req.ReferrerUserId, req.Nin); err != nil {
 		h.utils.RespondError(w, http.StatusInternalServerError, "Failed to complete onboarding: "+err.Error())
 		return
 	}
@@ -454,28 +534,26 @@ func (h *Handler) CheckReferralCode(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// LoginRequest represents the parameters for logging in
-type LoginRequest struct {
-	Country        string `json:"country" validate:"required"`
-	Identifier     string `json:"identifier" validate:"required,min=2,max=50"` // accepts email, username or phone
+// LoginCredentialsRequest represents Phase 1 of 2-step authentication
+type LoginCredentialsRequest struct {
+	Identifier     string `json:"identifier" validate:"required,min=2,max=100"`
 	Password       string `json:"password" validate:"required,min=4"`
-	IdentifierType string `json:"identifierType" validate:"required,oneof=email username phone"`
+	IdentifierType string `json:"identifierType" validate:"omitempty,oneof=email username phone"`
 	Iso2           string `json:"iso2" validate:"omitempty"`
 }
 
-// @Summary Login user
-// @Description Authenticates a user and returns access and refresh tokens
+// @Summary Login Phase 1 (Credentials)
+// @Description Verifies email/identifier and password, returns short-lived pre-auth token
 // @Tags Auth
 // @Accept json
 // @Produce json
-// @Param request body LoginRequest true "Login credentials"
+// @Param request body LoginCredentialsRequest true "User credentials"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
 // @Failure 401 {object} map[string]interface{}
 // @Router /auth/login [post]
-// Login handles the user login and token generation
-func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	var req LoginRequest
+func (h *Handler) LoginCredentials(w http.ResponseWriter, r *http.Request) {
+	var req LoginCredentialsRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
@@ -487,12 +565,49 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !(req.IdentifierType == "email" || req.IdentifierType == "username" || req.IdentifierType == "phone") {
-		h.utils.RespondError(w, http.StatusBadRequest, "Invalid identifier type")
+	result, err := h.authService.LoginCredentials(r.Context(), req.Identifier, req.Password, req.IdentifierType, req.Iso2)
+	if err != nil {
+		h.utils.RespondError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 
-	result, err := h.authService.Login(r.Context(), req.IdentifierType, req.Identifier, req.Password, req.Iso2)
+	h.utils.RespondSuccess(w, http.StatusOK, "Credentials verified", map[string]interface{}{
+		"preAuthToken": result.PreAuthToken,
+		"requiresPin":  result.RequiresPIN,
+		"user":         result.User,
+	})
+}
+
+// LoginPinRequest represents Phase 2 of 2-step authentication
+type LoginPinRequest struct {
+	PreAuthToken string `json:"preAuthToken" validate:"required"`
+	PIN          string `json:"pin" validate:"required,len=4,numeric"`
+}
+
+// @Summary Login Phase 2 (PIN)
+// @Description Verifies 4-digit transaction PIN using pre-auth token and issues full session JWTs
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body LoginPinRequest true "PIN and pre-auth token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /auth/login/pin [post]
+func (h *Handler) LoginPin(w http.ResponseWriter, r *http.Request) {
+	var req LoginPinRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.Error())
+		return
+	}
+
+	result, err := h.authService.LoginPin(r.Context(), req.PreAuthToken, req.PIN)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusUnauthorized, err.Error())
 		return
@@ -502,7 +617,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		"accessToken":  result.AccessToken,
 		"refreshToken": result.RefreshToken,
 		"user":         result.User,
-		"preferences":  result.Preferences,
 	})
 }
 
@@ -549,7 +663,6 @@ func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		"accessToken":  result.AccessToken,
 		"refreshToken": result.RefreshToken,
 		"user":         result.User,
-		"preferences":  result.Preferences,
 	})
 }
 
@@ -675,54 +788,9 @@ func (h *Handler) AdminLogin(w http.ResponseWriter, r *http.Request) {
 		"accessToken":  result.AccessToken,
 		"refreshToken": result.RefreshToken,
 		"user":         result.User,
-		"preferences":  result.Preferences,
 	})
 }
 
-// PartyLoginRequest represents the payload for party member login
-type PartyLoginRequest struct {
-	Identifier     string `json:"identifier" validate:"required,min=2,max=50"`
-	Password       string `json:"password" validate:"required,min=4"`
-	IdentifierType string `json:"identifierType" validate:"required,oneof=email username phone"`
-	Iso2           string `json:"iso2" validate:"omitempty"`
-}
-
-// @Summary Login party member user
-// @Description Authenticates a party member and returns access and refresh tokens
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Param request body PartyLoginRequest true "Party login credentials"
-// @Success 200 {object} AdminLoginResponse
-// @Failure 400 {object} map[string]interface{}
-// @Failure 401 {object} map[string]interface{}
-// @Router /auth/partyapp/login [post]
-func (h *Handler) PartyLogin(w http.ResponseWriter, r *http.Request) {
-	var req PartyLoginRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
-		return
-	}
-
-	if err := h.validate.Struct(req); err != nil {
-		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.Error())
-		return
-	}
-
-	result, err := h.authService.Login(r.Context(), req.IdentifierType, req.Identifier, req.Password, req.Iso2, "party_admin", "super_party_admin")
-	if err != nil {
-		h.utils.RespondError(w, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	h.utils.RespondSuccess(w, http.StatusOK, "Login successful", map[string]interface{}{
-		"accessToken":  result.AccessToken,
-		"refreshToken": result.RefreshToken,
-		"user":         result.User,
-		"preferences":  result.Preferences,
-	})
-}
 
 // LoginUser represents user details returned on login
 type LoginUser struct {
@@ -755,129 +823,239 @@ type AdminLoginData struct {
 	User         LoginUser `json:"user"`
 }
 
-// RegisterCandidatePlaceholderRequest represents the structure of candidate registration payload
-type RegisterCandidatePlaceholderRequest struct {
-	Email          string `json:"email" validate:"omitempty,email"`
-	Password       string `json:"password" validate:"required,min=5,max=72"`
-	LastName       string `json:"last_name" validate:"required,min=2,max=30"`
-	FirstName      string `json:"first_name" validate:"required,min=2,max=30"`
-	MiddleName     string `json:"middle_name" validate:"omitempty,min=2,max=30"`
-	Username       string `json:"username" validate:"omitempty,min=3,max=30"`
-	Gender         string `json:"gender" validate:"required,oneof=male female"`
-	DateOfBirth    string `json:"date_of_birth" validate:"required"` // Expects YYYY-MM-DD
-	CurrentCountry int16  `json:"current_country" validate:"required"`
-	CurrentState   int16  `json:"current_state" validate:"required"`
-	CurrentCity    int32  `json:"current_city" validate:"omitempty"`
-	StateOfOrigin  int16  `json:"state_of_origin" validate:"omitempty"`
-	PartyID        int64  `json:"party_id" validate:"omitempty"`
-	Avatar         string `json:"avatar" validate:"omitempty"`
-	AvatarFileId   *int64 `json:"avatar_file_id" validate:"omitempty"`
+// SendPhoneOTPRequest represents the payload to send phone OTP
+type SendPhoneOTPRequest struct {
+	PhoneNumber string `json:"phoneNumber" validate:"required"`
+	Channel     string `json:"channel" validate:"required,oneof=sms whatsapp"`
+	Iso2        string `json:"iso2" validate:"omitempty"`
 }
 
-// @Summary Register a new candidate user with placeholder status
-// @Description Creates a new candidate placeholder user account
+// @Summary Send Phone OTP
+// @Description Sends a 6-digit OTP to the user's phone via SMS or WhatsApp
 // @Tags Auth
+// @Security BearerAuth
 // @Accept json
 // @Produce json
-// @Param request body RegisterCandidatePlaceholderRequest true "Candidate registration details"
-// @Success 201 {object} map[string]interface{}
+// @Param request body SendPhoneOTPRequest true "Phone OTP request"
+// @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
-// @Failure 500 {object} map[string]interface{}
-// @Router /auth/register_candidate [post]
-// RegisterCandidatePlaceholder registers any placeholder user (with specific role & role_level)
-func (h *Handler) RegisterCandidatePlaceholder(w http.ResponseWriter, r *http.Request) {
+// @Failure 401 {object} map[string]interface{}
+// @Router /users/phone/otp [post]
+func (h *Handler) SendPhoneOTP(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
 	if !ok {
 		return
 	}
 
-	var req RegisterCandidatePlaceholderRequest
+	var req SendPhoneOTPRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
 		return
 	}
 
 	if err := h.validate.Struct(req); err != nil {
-		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.(validator.ValidationErrors)[0].Translate(nil))
+		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.Error())
 		return
 	}
 
-	// Permission checks
-	isAdmin := claims.HasAnyRole("admin", "super_admin")
-	isPartyAdmin := claims.HasAnyRole("party_admin", "super_party_admin")
-	if !isAdmin && !isPartyAdmin {
-		h.utils.RespondError(w, http.StatusForbidden, "Forbidden: insufficient permissions")
-		return
-	}
-	if isPartyAdmin && !isAdmin {
-		// A party admin can only register users for their own party
-		if claims.PartyID == 0 || claims.PartyID != int16(req.PartyID) {
-			h.utils.RespondError(w, http.StatusForbidden, "Forbidden: you can only add members to your own party")
-			return
-		}
-	}
-
-	// Validate and parse DateOfBirth
-	dob, err := time.Parse("2006-01-02", req.DateOfBirth)
-	if err != nil {
-		h.utils.RespondError(w, http.StatusBadRequest, "Invalid date format for date_of_birth. Use YYYY-MM-DD")
+	if err := h.authService.SendPhoneOTP(r.Context(), claims.UserID, req.PhoneNumber, req.Channel, req.Iso2); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// Validate email
-	if req.Email != "" {
-		req.Email = strings.ToLower(strings.TrimSpace(req.Email))
-		if exists, _ := h.usersService.CheckEmail(r.Context(), req.Email); exists {
-			h.utils.RespondError(w, http.StatusConflict, "Email already exists")
-			return
-		}
-	}
+	h.utils.RespondSuccess(w, http.StatusOK, "Verification code sent successfully", nil)
+}
 
-	// Validate and clean username
-	if req.Username != "" {
-		cleanUsername, err := auth.CleanUsername(req.Username)
-		if err != nil {
-			h.utils.RespondError(w, http.StatusBadRequest, err.Error())
-			return
-		}
-		if exists, _ := h.usersService.CheckUsername(r.Context(), cleanUsername); exists {
-			h.utils.RespondError(w, http.StatusConflict, "Username already exists")
-			return
-		}
-		req.Username = cleanUsername
-	}
+// VerifyPhoneOTPRequest represents the payload to verify phone OTP
+type VerifyPhoneOTPRequest struct {
+	PhoneNumber string `json:"phoneNumber" validate:"required"`
+	OTP         string `json:"otp" validate:"required,len=6,numeric"`
+	Iso2        string `json:"iso2" validate:"omitempty"`
+}
 
-	// Register user
-	result, err := h.authService.RegisterCandidatePlaceholder(
-		r.Context(),
-		req.Email,
-		req.Password,
-		req.FirstName,
-		req.LastName,
-		req.MiddleName,
-		req.Username,
-		req.Gender,
-		req.Avatar,
-		req.AvatarFileId,
-		dob,
-		req.CurrentCountry,
-		req.CurrentState,
-		req.CurrentCity,
-		req.StateOfOrigin,
-		req.PartyID,
-	)
-	if err != nil {
-		h.utils.RespondError(w, http.StatusInternalServerError, "Failed to create candidate placeholder: "+err.Error())
+// @Summary Verify Phone OTP
+// @Description Verifies the 6-digit phone OTP and marks the phone as verified
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body VerifyPhoneOTPRequest true "Verify Phone OTP request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /users/phone/verify [post]
+func (h *Handler) VerifyPhoneOTP(w http.ResponseWriter, r *http.Request) {
+	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
+	if !ok {
 		return
 	}
 
-	if req.AvatarFileId != nil && *req.AvatarFileId > 0 {
-		_, _ = h.filesService.UpdateFileOwner(r.Context(), *req.AvatarFileId, result.UserID)
+	var req VerifyPhoneOTPRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		return
 	}
 
-	h.utils.RespondSuccess(w, http.StatusCreated, "Candidate placeholder registered successfully", map[string]interface{}{
-		"id":      result.UserID,
-		"fake_id": result.FakeID,
-		"user":    result.User,
+	if err := h.validate.Struct(req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.Error())
+		return
+	}
+
+	if err := h.authService.VerifyPhoneOTP(r.Context(), claims.UserID, req.PhoneNumber, req.OTP, req.Iso2); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	h.utils.RespondSuccess(w, http.StatusOK, "Phone number verified successfully", map[string]interface{}{
+		"verified": true,
 	})
 }
+
+// SaveOnboardingProfileRequest represents the payload for the user's personal details, address, and optional referral
+type SaveOnboardingProfileRequest struct {
+	FirstName      string `json:"firstName" validate:"omitempty,min=2,max=50" example:"Daniel"`
+	MiddleName     string `json:"middleName,omitempty" validate:"omitempty,max=50" example:"Kalu"`
+	LastName       string `json:"lastName" validate:"omitempty,min=2,max=50" example:"Chukwu"`
+	DateOfBirth    string `json:"dateOfBirth" validate:"omitempty" example:"1998-05-14"`
+	CountryID      int16  `json:"countryId,omitempty" validate:"omitempty" example:"161"`
+	CountryCode    string `json:"countryCode,omitempty" validate:"omitempty" example:"NG"`
+	State          string `json:"state,omitempty" validate:"omitempty" example:"Lagos"`
+	City           string `json:"city,omitempty" validate:"omitempty" example:"Ikeja"`
+	StreetAddress  string `json:"streetAddress,omitempty" validate:"omitempty" example:"14 Admiralty Way"`
+	PostalCode     string `json:"postalCode,omitempty" validate:"omitempty" example:"100001"`
+	ReferralSource string `json:"referralSource,omitempty" validate:"omitempty" example:"Social Media"`
+	ReferralCode   string `json:"referralCode,omitempty" validate:"omitempty" example:"CHIPA123"`
+}
+
+// UnmarshalJSON provides seamless backward-compatibility for snake_case and alias field names
+// without exposing redundant fields in the public Swagger/OpenAPI documentation.
+func (r *SaveOnboardingProfileRequest) UnmarshalJSON(data []byte) error {
+	type Alias SaveOnboardingProfileRequest
+	aux := struct {
+		*Alias
+		FirstNameSnake   *string `json:"first_name"`
+		MiddleNameSnake  *string `json:"middle_name"`
+		LastNameSnake    *string `json:"last_name"`
+		DateOfBirthSnake *string `json:"date_of_birth"`
+		DOB              *string `json:"dob"`
+		CurrentCountry   *int16  `json:"current_country"`
+		CurrentCountryC  *int16  `json:"currentCountry"`
+		CountryCodeSnake *string `json:"country_code"`
+		CurrentState     *string `json:"current_state"`
+		CurrentCity      *string `json:"current_city"`
+		StreetAddressS   *string `json:"street_address"`
+		PostalCodeSnake  *string `json:"postal_code"`
+		ReferralSourceS  *string `json:"referral_source"`
+		ReferralCodeS    *string `json:"referral_code"`
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	if r.FirstName == "" && aux.FirstNameSnake != nil {
+		r.FirstName = *aux.FirstNameSnake
+	}
+	if r.MiddleName == "" && aux.MiddleNameSnake != nil {
+		r.MiddleName = *aux.MiddleNameSnake
+	}
+	if r.LastName == "" && aux.LastNameSnake != nil {
+		r.LastName = *aux.LastNameSnake
+	}
+	if r.DateOfBirth == "" {
+		if aux.DateOfBirthSnake != nil && *aux.DateOfBirthSnake != "" {
+			r.DateOfBirth = *aux.DateOfBirthSnake
+		} else if aux.DOB != nil && *aux.DOB != "" {
+			r.DateOfBirth = *aux.DOB
+		}
+	}
+	if r.CountryID <= 0 {
+		if aux.CurrentCountry != nil && *aux.CurrentCountry > 0 {
+			r.CountryID = *aux.CurrentCountry
+		} else if aux.CurrentCountryC != nil && *aux.CurrentCountryC > 0 {
+			r.CountryID = *aux.CurrentCountryC
+		}
+	}
+	if r.CountryCode == "" && aux.CountryCodeSnake != nil {
+		r.CountryCode = *aux.CountryCodeSnake
+	}
+	if r.State == "" && aux.CurrentState != nil {
+		r.State = *aux.CurrentState
+	}
+	if r.City == "" && aux.CurrentCity != nil {
+		r.City = *aux.CurrentCity
+	}
+	if r.StreetAddress == "" && aux.StreetAddressS != nil {
+		r.StreetAddress = *aux.StreetAddressS
+	}
+	if r.PostalCode == "" && aux.PostalCodeSnake != nil {
+		r.PostalCode = *aux.PostalCodeSnake
+	}
+	if r.ReferralSource == "" && aux.ReferralSourceS != nil {
+		r.ReferralSource = *aux.ReferralSourceS
+	}
+	if r.ReferralCode == "" && aux.ReferralCodeS != nil {
+		r.ReferralCode = *aux.ReferralCodeS
+	}
+
+	return nil
+}
+
+// @Summary Save Onboarding Profile
+// @Description Updates user profile with personal information and address during onboarding
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body SaveOnboardingProfileRequest true "Onboarding profile details"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /users/me/onboarding [patch]
+func (h *Handler) SaveOnboardingProfile(w http.ResponseWriter, r *http.Request) {
+	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
+	if !ok {
+		return
+	}
+
+	var req SaveOnboardingProfileRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		return
+	}
+
+	currentCountry := req.CountryID
+	if currentCountry <= 0 && req.CountryCode != "" {
+		if cID, err := h.authService.GetCountryIDByIso2(r.Context(), req.CountryCode); err == nil && cID > 0 {
+			currentCountry = cID
+		}
+	}
+	if currentCountry <= 0 {
+		currentCountry = 161
+	}
+
+	params := auth.OnboardingProfileParams{
+		PublicID:       claims.PublicID,
+		FirstName:      req.FirstName,
+		MiddleName:     req.MiddleName,
+		LastName:       req.LastName,
+		DateOfBirth:    req.DateOfBirth,
+		CurrentCountry: currentCountry,
+		CurrentState:   req.State,
+		CurrentCity:    req.City,
+		StreetAddress:  req.StreetAddress,
+		PostalCode:     req.PostalCode,
+		ReferralSource: req.ReferralSource,
+		ReferralCode:   req.ReferralCode,
+	}
+
+	if err := h.authService.UpdateOnboardingProfile(r.Context(), claims.UserID, params); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	h.utils.RespondSuccess(w, http.StatusOK, "Profile saved successfully", nil)
+}
+

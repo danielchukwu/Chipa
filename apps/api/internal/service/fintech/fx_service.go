@@ -73,14 +73,17 @@ func (s *FXService) CreateQuote(ctx context.Context, from domain.Currency, to do
 
 	quoteID := fmt.Sprintf("qte-%d-%s%s", time.Now().UnixNano(), from, to)
 	quote := &domain.FXQuote{
-		QuoteID:       quoteID,
-		FromCurrency:  from,
-		ToCurrency:    to,
-		SendAmount:    sendAmount,
-		ReceiveAmount: receiveAmount,
-		Rate:          rate,
-		Fee:           fee,
-		ExpiresAt:     time.Now().Add(60 * time.Second),
+		QuoteID:            quoteID,
+		FromCurrency:       from,
+		ToCurrency:         to,
+		SendAmountMinor:    int64(netSend*100) + int64(fee*100),
+		SendAmount:         sendAmount,
+		ReceiveAmountMinor: int64(receiveAmount * 100),
+		ReceiveAmount:      receiveAmount,
+		Rate:               rate,
+		FeeMinor:           int64(fee * 100),
+		Fee:                fee,
+		ExpiresAt:          time.Now().Add(60 * time.Second),
 	}
 
 	s.mu.Lock()

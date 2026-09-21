@@ -1,0 +1,10 @@
+export { default as AppleStoreIcon } from "./apple-store-icon";
+export { default as CloudIcon } from "./cloud-icon";
+export { default as DownloadOnAppstoreIcon } from "./download-on-appstore-icon";
+export { default as EarthIcon } from "./earth-icon";
+export { default as GetItOnPlaystoreIcon } from "./get-it-on-playstore-icon";
+export { default as NailIcon } from "./nail-icon";
+export { default as PlayStoreIcon } from "./play-store-icon";
+export { default as ThreeSkewedCircles } from "./three-skewed-circles";
+export { default as TwinkleIcon } from "./twinkle-icon";
+export { default as VerifiedIcon } from "./verified-icon";

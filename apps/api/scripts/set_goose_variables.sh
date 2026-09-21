@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export DB_NAME=free9ja_db
+export DB_NAME=chipa_db
 export DB_USER=postgres
 export DB_PASSWORD=password
 export DB_HOST=localhost

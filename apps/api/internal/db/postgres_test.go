@@ -17,7 +17,7 @@ func TestNewPostgresPool(t *testing.T) {
 	// database variables
 	user := "user"
 	password := "password"
-	db_name := "free9ja_db"
+	db_name := "chipa_db"
 
 	// 1. Setup Postgres Test Container
 	pgConfig, pgContainer, err := utils.SetupPostgresTestContainer(user, password, db_name, "5432")

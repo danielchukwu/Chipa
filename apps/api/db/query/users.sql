@@ -36,27 +36,27 @@ SET on_whatsapp = EXCLUDED.on_whatsapp,
     is_active = true
 RETURNING id;
 
--- name: UpdateUserFakeID :exec
+-- name: UpdateUserPublicID :exec
 UPDATE users
-SET fake_id = $2
+SET public_id = $2
 WHERE id = $1;
 
--- name: UpdateUserPasswordByFid :exec
+-- name: UpdateUserPasswordByPublicID :exec
 UPDATE users
 SET password_hash = $2
-WHERE fake_id = $1;
+WHERE public_id = $1;
 
 -- name: GetUserByID :one
-SELECT u.id, u.fake_id, u.email, u.avatar, u.avatar_file_id, u.phone, u.username, u.password_hash, u.last_name, u.first_name, u.middle_name, u.gender, u.date_of_birth, u.voters_card_image, u.current_country, u.current_state, u.current_city, u.current_lga, u.current_ward, u.country_of_origin, u.state_of_origin, u.is_politician, u.is_verified, u.has_role, u.party_id, u.polling_unit_id, u.account_status, u.created_at, u.updated_at,
+SELECT u.id, u.public_id, u.email, u.avatar, u.avatar_file_id, u.phone, u.username, u.password_hash, u.last_name, u.first_name, u.middle_name, u.gender, u.date_of_birth, u.voters_card_image, COALESCE(u.current_country, 161)::smallint AS current_country, COALESCE(u.current_state, 0)::smallint AS current_state, u.current_city, u.current_lga, u.current_ward, u.country_of_origin, u.state_of_origin, u.is_politician, u.is_verified, u.has_role, u.party_id, u.polling_unit_id, u.account_status, u.created_at, u.updated_at,
        u.referral_code
 FROM users u
 WHERE u.id = $1 LIMIT 1;
 
--- name: GetUserByFakeID :one
-SELECT u.id, u.fake_id, u.email, u.avatar, u.avatar_file_id, u.phone, u.username, u.password_hash, u.last_name, u.first_name, u.middle_name, u.gender, u.date_of_birth, u.voters_card_image, u.current_country, u.current_state, u.current_city, u.current_lga, u.current_ward, u.country_of_origin, u.state_of_origin, u.is_politician, u.is_verified, u.has_role, u.party_id, u.polling_unit_id, u.account_status, u.created_at, u.updated_at,
+-- name: GetUserByPublicID :one
+SELECT u.id, u.public_id, u.email, u.avatar, u.avatar_file_id, u.phone, u.username, u.password_hash, u.last_name, u.first_name, u.middle_name, u.gender, u.date_of_birth, u.voters_card_image, COALESCE(u.current_country, 161)::smallint AS current_country, COALESCE(u.current_state, 0)::smallint AS current_state, u.current_city, u.current_lga, u.current_ward, u.country_of_origin, u.state_of_origin, u.is_politician, u.is_verified, u.has_role, u.party_id, u.polling_unit_id, u.account_status, u.created_at, u.updated_at,
        u.referral_code
 FROM users u
-WHERE u.fake_id = $1 LIMIT 1;
+WHERE u.public_id = $1 LIMIT 1;
 
 -- name: UpdateUserStatus :exec
 UPDATE users
@@ -109,7 +109,7 @@ RETURNING *;
 -- If a parameter like 'cursor' is not provided (null), the 'sqlc.narg('cursor')::bigint IS NULL' 
 -- condition becomes true, effectively skipping that filter.
 -- This allows us to use a single dynamic query instead of writing multiple separate queries.
-SELECT u.id, u.fake_id FROM users u
+SELECT u.id, u.public_id FROM users u
 WHERE 
   (sqlc.narg('cursor')::bigint IS NULL OR u.id < sqlc.narg('cursor')::bigint)
   AND (sqlc.narg('party_id')::smallint IS NULL OR u.party_id = sqlc.narg('party_id')::smallint)
@@ -220,20 +220,20 @@ SELECT id, first_name, last_name
 FROM users
 WHERE referral_code = $1 LIMIT 1;
 
--- name: GetFakeIDByEmail :one
-SELECT fake_id FROM users
+-- name: GetPublicIDByEmail :one
+SELECT public_id FROM users
 WHERE email = $1 LIMIT 1;
 
--- name: GetUserPasswordHashByFakeID :one
+-- name: GetUserPasswordHashByPublicID :one
 SELECT password_hash FROM users
-WHERE fake_id = $1 LIMIT 1;
+WHERE public_id = $1 LIMIT 1;
 
--- name: GetFakeIDByPhone :one
-SELECT fake_id FROM users
+-- name: GetPublicIDByPhone :one
+SELECT public_id FROM users
 WHERE phone = $1 LIMIT 1;
 
--- name: GetFakeIDByUsername :one
-SELECT fake_id FROM users
+-- name: GetPublicIDByUsername :one
+SELECT public_id FROM users
 WHERE username = $1 LIMIT 1;
 
 -- name: CountAllUserPhoneNumbers :one
@@ -296,8 +296,8 @@ WHERE user_id = $1 LIMIT 1;
 SELECT * FROM users_phone_numbers
 WHERE user_id = $1;
 
--- name: GetFakeIDByAdditionalPhone :one
-SELECT u.fake_id
+-- name: GetPublicIDByAdditionalPhone :one
+SELECT u.public_id
 FROM users u
 JOIN users_phone_numbers upn ON u.id = upn.user_id
 WHERE upn.phone = $1 LIMIT 1;
@@ -307,7 +307,7 @@ SELECT user_id
 FROM users_nin
 WHERE nin = $1 LIMIT 1;
 
--- name: GetFakeIDByUserID :one
-SELECT fake_id FROM users
+-- name: GetPublicIDByUserID :one
+SELECT public_id FROM users
 WHERE id = $1 LIMIT 1;
 

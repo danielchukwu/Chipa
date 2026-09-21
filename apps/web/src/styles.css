@@ -1,0 +1,102 @@
+@import "@repo/ui/styles/globals.css";
+@import "tw-animate-css";
+
+@source "./**/*.{ts,tsx}";
+
+:root {
+	--bg-landing: #fcfaf7;
+	--card-cream: #faf7f2;
+	--card-green: #eef8ee;
+	--card-blue: #edf5fe;
+	--card-purple: #f3edfc;
+	--card-peach: #fdf1ec;
+	--text-main: #111111;
+	--text-muted: #555555;
+	--brand-primary: #ff793f;
+	--brand-secondary: #fdbe4e;
+	--brand-green: #009a49;
+	--brand-blue: #46a1f8;
+}
+
+body {
+	background-color: var(--bg-landing);
+	color: var(--text-main);
+	font-family: "Inter", var(--font-sans), sans-serif;
+}
+
+.font-display {
+	font-family: "Satoshi", var(--font-satoshi), sans-serif;
+}
+
+.page-container {
+	width: 100%;
+	max-width: 1280px;
+	margin-left: auto;
+	margin-right: auto;
+	padding-left: 1rem;
+	padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+	.page-container {
+		padding-left: 1.5rem;
+		padding-right: 1.5rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.page-container {
+		padding-left: 2rem;
+		padding-right: 2rem;
+	}
+}
+
+/* Smooth micro-interactions */
+button,
+a {
+	transition: all 180ms ease;
+}
+
+/* Keyframes for subtle entrance animations */
+@keyframes rise-in {
+	from {
+		opacity: 0;
+		transform: translateY(16px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.rise-in {
+	animation: rise-in 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes float-subtle {
+	0%,
+	100% {
+		transform: translateY(0px);
+	}
+	50% {
+		transform: translateY(-6px);
+	}
+}
+
+.float-subtle {
+	animation: float-subtle 4s ease-in-out infinite;
+}
+
+@keyframes pulse-subtle {
+	0%,
+	100% {
+		transform: scale(1);
+	}
+	50% {
+		transform: scale(1.08);
+	}
+}
+
+.pulse-subtle {
+	animation: pulse-subtle 3s ease-in-out infinite;
+}
