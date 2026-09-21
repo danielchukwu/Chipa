@@ -8,12 +8,14 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"chipa/api/internal/utils"
 
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 // DatabaseConfig holds database connection parameters.
@@ -133,40 +135,65 @@ func LoadConfig() (*Config, error) {
 		}
 	}
 
-	db_host := GetEnv("DB_HOST", "localhost")
-	db_user := GetEnv("DB_USER", "")
-	db_pass := GetEnv("DB_PASSWORD", "")
-	db_name := GetEnv("DB_NAME", "")
-	db_port := GetEnv("DB_PORT", "")
-	db_sslmode := GetEnv("DB_SSLMODE", "disable")
-	redis_addr := GetEnv("REDIS_ADDR", "") //localhost:6379
+	is_testing := GetEnv("IS_TESTING", "false")
+
+	// Support direct DATABASE_URL (standard for Railway, Heroku, etc.)
+	db_url := GetEnv("DATABASE_URL", "")
+	if db_url == "" {
+		db_host := GetEnv("DB_HOST", GetEnv("PGHOST", "localhost"))
+		db_user := GetEnv("DB_USER", GetEnv("PGUSER", ""))
+		db_pass := GetEnv("DB_PASSWORD", GetEnv("PGPASSWORD", ""))
+		db_name := GetEnv("DB_NAME", GetEnv("PGDATABASE", ""))
+		db_port := GetEnv("DB_PORT", GetEnv("PGPORT", ""))
+		db_sslmode := GetEnv("DB_SSLMODE", "disable")
+
+		if db_name == "" || db_user == "" || db_pass == "" || db_port == "" {
+			return nil, fmt.Errorf("DATABASE_URL or (DB_NAME, DB_USER, DB_PASSWORD, DB_PORT) must be set")
+		}
+
+		// if testing, setup test containers for postgres and redis
+		if is_testing == "true" {
+			testDbConfig, _, err := utils.SetupPostgresTestContainer(db_user, db_pass, db_name, db_port)
+			if err != nil {
+				return nil, fmt.Errorf("failed to setup postgres test container: %w", err)
+			}
+			db_port = testDbConfig.Port
+		}
+
+		db_url = utils.FormatPostgresDSN(db_user, db_pass, db_host, db_port, db_name, db_sslmode)
+	}
+
+	// Support direct REDIS_URL or REDIS_ADDR/REDISHOST
+	redis_url := GetEnv("REDIS_URL", "")
+	redis_addr := GetEnv("REDIS_ADDR", "")
 	redis_port := GetEnv("REDIS_PORT", "")
 	redis_password := GetEnv("REDIS_PASSWORD", "")
 	redis_db := GetIntEnv("REDIS_DB", 0)
-	is_testing := GetEnv("IS_TESTING", "false")
 
-	if db_name == "" || db_user == "" || db_pass == "" || db_port == "" || redis_addr == "" || redis_port == "" {
-		return nil, fmt.Errorf("DB_NAME, DB_USER, DB_PASSWORD, DB_PORT, REDIS_ADDR, and REDIS_PORT must be set")
+	if redis_url != "" {
+		if opt, err := redis.ParseURL(redis_url); err == nil {
+			redis_addr = opt.Addr
+			redis_password = opt.Password
+			redis_db = opt.DB
+		}
+	} else if redis_addr == "" && os.Getenv("REDISHOST") != "" {
+		redis_addr = fmt.Sprintf("%s:%s", os.Getenv("REDISHOST"), GetEnv("REDISPORT", "6379"))
+		redis_password = GetEnv("REDISPASSWORD", "")
+	} else if redis_addr != "" && !strings.Contains(redis_addr, ":") && redis_port != "" {
+		redis_addr = fmt.Sprintf("%s:%s", redis_addr, redis_port)
 	}
 
-	// if testing, setup test containers for postgres and redis
-	if is_testing == "true" {
-		// setup postgres test container
-		testDbConfig, _, err := utils.SetupPostgresTestContainer(db_user, db_pass, db_name, db_port)
-		if err != nil {
-			return nil, fmt.Errorf("failed to setup postgres test container: %w", err)
-		}
-		db_port = testDbConfig.Port
-
-		// setup redis test container
-		redis_addr, _, err = utils.SetupRedisTestContainer(redis_port)
+	if is_testing == "true" && redis_port != "" {
+		testRedisAddr, _, err := utils.SetupRedisTestContainer(redis_port)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup redis test container: %w", err)
 		}
+		redis_addr = testRedisAddr
 	}
 
-	// create db connection url
-	db_url := utils.FormatPostgresDSN(db_user, db_pass, db_host, db_port, db_name, db_sslmode)
+	if redis_addr == "" {
+		return nil, fmt.Errorf("REDIS_URL, REDIS_ADDR, or REDISHOST must be set")
+	}
 
 	// jwt secret and expirations
 	jwtSecret := GetEnv("JWT_SECRET", "chipa_jwt_secret_key_for_dev_only")
@@ -221,6 +248,13 @@ func LoadConfig() (*Config, error) {
 	// Validation: Ensure critical variables are set
 	if configInstance.Database.URL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is not set")
+	}
+
+	// Bank-grade fintech compliance: enforce secure secrets in production/staging
+	if strings.EqualFold(configInstance.Env, "production") || strings.EqualFold(configInstance.Env, "staging") {
+		if configInstance.JWTSecret == "chipa_jwt_secret_key_for_dev_only" || len(configInstance.JWTSecret) < 32 {
+			return nil, fmt.Errorf("security violation: production/staging requires an explicit, cryptographically secure JWT_SECRET of at least 32 characters")
+		}
 	}
 
 	return configInstance, nil

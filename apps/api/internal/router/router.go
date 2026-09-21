@@ -147,6 +147,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	kycH := kychandler.NewHandler(kycSvc, utilsInstance)
 
 	// Middlewares
+	mainRouter.Use(securityHeadersMiddleware)
 	mainRouter.Use(corsMiddleware)
 	mainRouter.Use(middleware.RequestID)
 	mainRouter.Use(middleware.RealIP)
@@ -307,5 +308,20 @@ func requestLoggerMiddleware(next http.Handler) http.Handler {
 		}()
 
 		next.ServeHTTP(ww, r)
+	})
+}
+
+// securityHeadersMiddleware enforces bank-grade HTTP security headers for PCI-DSS & OWASP compliance
+func securityHeadersMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("X-XSS-Protection", "0")
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		w.Header().Set("X-Permitted-Cross-Domain-Policies", "none")
+		w.Header().Set("Permissions-Policy", "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()")
+
+		next.ServeHTTP(w, r)
 	})
 }

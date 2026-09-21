@@ -1,0 +1,6 @@
+# nixpacks.toml
+# Ensure the Go toolchain is available alongside Node/pnpm in Nixpacks
+providers = ["node", "go"]
+
+[phases.setup]
+nixPkgs = ["...", "go"]

@@ -20,6 +20,7 @@ func NewPostgresPool(ctx context.Context, connString string) (*pgxpool.Pool, err
 	dbConfig.MinConns = 10
 	dbConfig.MaxConnLifetime = 30 * time.Minute
 	dbConfig.MaxConnIdleTime = 15 * time.Minute
+	dbConfig.HealthCheckPeriod = 1 * time.Minute
 
 	// Initialize the pool
 	pool, err := pgxpool.NewWithConfig(ctx, dbConfig)
