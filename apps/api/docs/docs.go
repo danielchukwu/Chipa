@@ -2262,6 +2262,67 @@ const docTemplate = `{
                 }
             }
         },
+        "/kyc/tier1/pan-african": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Verifies primary identity credentials across African jurisdictions (Nigeria BVN/NIN, Ghana Card, Kenya KRA PIN, South Africa ID) to upgrade account limits and provision DVA.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "KYC"
+                ],
+                "summary": "Submit Tier 1 Pan-African KYC (BVN, NIN, Ghana Card, KRA PIN, SA ID)",
+                "parameters": [
+                    {
+                        "description": "Identity document details",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/kychandler.SubmitTier1Request"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Upgraded to Tier 1",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Verification failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/kyc/tier2": {
             "post": {
                 "security": [
@@ -2866,6 +2927,60 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/users/phone": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Stores user phone number without OTP verification for deferred verification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Save Phone Number",
+                "parameters": [
+                    {
+                        "description": "Save Phone Number request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/authhandler.SavePhoneNumberRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3585,6 +3700,10 @@ const docTemplate = `{
                     "maxLength": 50,
                     "example": "Kalu"
                 },
+                "phoneNumber": {
+                    "type": "string",
+                    "example": "+2348012345678"
+                },
                 "postalCode": {
                     "type": "string",
                     "example": "100001"
@@ -3604,6 +3723,20 @@ const docTemplate = `{
                 "streetAddress": {
                     "type": "string",
                     "example": "14 Admiralty Way"
+                }
+            }
+        },
+        "authhandler.SavePhoneNumberRequest": {
+            "type": "object",
+            "required": [
+                "phoneNumber"
+            ],
+            "properties": {
+                "iso2": {
+                    "type": "string"
+                },
+                "phoneNumber": {
+                    "type": "string"
                 }
             }
         },

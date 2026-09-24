@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"chipa/api/internal/crypto"
 	"chipa/api/internal/domain"
 	"chipa/api/internal/provider/bridge"
 	"chipa/api/internal/provider/paystack"
@@ -63,6 +64,19 @@ func getCurrencyMeta(curr domain.Currency) (name string, symbol string) {
 	}
 }
 
+// EnsureUserAccounts provisions or fetches the user's multi-currency accounts and returns the NGN account.
+func (s *WalletService) EnsureUserAccounts(ctx context.Context, userID int64, fallbackName ...string) (*domain.VirtualAccount, error) {
+	name := "Chipa User"
+	if len(fallbackName) > 0 && fallbackName[0] != "" {
+		name = fallbackName[0]
+	}
+	accs := s.ensureAccounts(ctx, userID, name)
+	if ngn, ok := accs[domain.CurrencyNGN]; ok {
+		return ngn, nil
+	}
+	return nil, fmt.Errorf("failed to provision NGN virtual account")
+}
+
 func (s *WalletService) ensureAccounts(ctx context.Context, userID int64, fallbackName string) map[domain.Currency]*domain.VirtualAccount {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -70,11 +84,19 @@ func (s *WalletService) ensureAccounts(ctx context.Context, userID int64, fallba
 	// If database is available, read from financial_accounts + payment_accounts
 	if s.pool != nil {
 		accs := s.loadAccountsFromDB(ctx, userID)
-		if len(accs) > 0 {
+
+		// Verify whether the accounts are fully provisioned with payment rails (DVA)
+		hasNGNDVA := false
+		if ngn, ok := accs[domain.CurrencyNGN]; ok && ngn.AccountNumber != "" && ngn.BankName != "" {
+			hasNGNDVA = true
+		}
+
+		// If user has all 4 primary currency accounts and NGN has a dedicated payment account (DVA)
+		if hasNGNDVA && len(accs) >= 4 {
 			return accs
 		}
 
-		// Provision new accounts for user
+		// Provision new accounts or missing payment rails for user
 		s.provisionInitialAccountsDB(ctx, userID, fallbackName)
 		return s.loadAccountsFromDB(ctx, userID)
 	}
@@ -89,8 +111,8 @@ func (s *WalletService) ensureAccounts(ctx context.Context, userID int64, fallba
 	// 1. NGN (Paystack)
 	if s.paystackClient != nil {
 		ngnAcc, _ := s.paystackClient.ProvisionNGNAccount(ctx, userID, fallbackName)
-		ngnAcc.BalanceMinor = 250000000 // 2,500,000 NGN in kobo
-		ngnAcc.Balance = 2500000.00
+		ngnAcc.BalanceMinor = 0
+		ngnAcc.Balance = 0.00
 		accs[domain.CurrencyNGN] = ngnAcc
 	} else {
 		accs[domain.CurrencyNGN] = &domain.VirtualAccount{
@@ -99,8 +121,8 @@ func (s *WalletService) ensureAccounts(ctx context.Context, userID int64, fallba
 			Currency:     domain.CurrencyNGN,
 			CurrencyName: "Nigerian Naira",
 			Symbol:       "₦",
-			BalanceMinor: 250000000,
-			Balance:      2500000.00,
+			BalanceMinor: 0,
+			Balance:      0.00,
 			AccountName:  fmt.Sprintf("CHIPA / %s", fallbackName),
 			AccountNumber: fmt.Sprintf("829%07d", userID*1000+19),
 			BankName:     "Titan Trust Bank (Paystack)",
@@ -114,20 +136,20 @@ func (s *WalletService) ensureAccounts(ctx context.Context, userID int64, fallba
 	// 2. USD (Bridge.xyz)
 	if s.bridgeClient != nil {
 		usdAcc, _ := s.bridgeClient.ProvisionUSDAccount(ctx, userID, fallbackName)
-		usdAcc.BalanceMinor = 845000
-		usdAcc.Balance = 8450.00
+		usdAcc.BalanceMinor = 0
+		usdAcc.Balance = 0.00
 		usdAcc.Provider = "bridge"
 		accs[domain.CurrencyUSD] = usdAcc
 
 		gbpAcc, _ := s.bridgeClient.ProvisionGBPAccount(ctx, userID, fallbackName)
-		gbpAcc.BalanceMinor = 320050
-		gbpAcc.Balance = 3200.50
+		gbpAcc.BalanceMinor = 0
+		gbpAcc.Balance = 0.00
 		gbpAcc.Provider = "bridge"
 		accs[domain.CurrencyGBP] = gbpAcc
 
 		eurAcc, _ := s.bridgeClient.ProvisionEURAccount(ctx, userID, fallbackName)
-		eurAcc.BalanceMinor = 410000
-		eurAcc.Balance = 4100.00
+		eurAcc.BalanceMinor = 0
+		eurAcc.Balance = 0.00
 		eurAcc.Provider = "bridge"
 		accs[domain.CurrencyEUR] = eurAcc
 	}
@@ -208,9 +230,15 @@ func (s *WalletService) loadAccountsFromDB(ctx context.Context, userID int64) ma
 }
 
 func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID int64, fallbackName string) {
-	// 1. Resolve user holder name
-	var firstName, lastName string
-	_ = s.pool.QueryRow(ctx, "SELECT COALESCE(first_name, ''), COALESCE(last_name, '') FROM users WHERE id = $1", userID).Scan(&firstName, &lastName)
+	// 1. Resolve user holder name, email, and phone
+	var firstName, lastName, email, phone string
+	_ = s.pool.QueryRow(ctx, `
+		SELECT COALESCE(p.first_name, ''), COALESCE(p.last_name, ''), COALESCE(u.email, ''), COALESCE(u.phone, '')
+		FROM users u
+		LEFT JOIN user_profiles p ON p.user_id = u.id
+		WHERE u.id = $1
+	`, userID).Scan(&firstName, &lastName, &email, &phone)
+
 	holderName := strings.TrimSpace(fmt.Sprintf("%s %s", firstName, lastName))
 	if holderName == "" {
 		if fallbackName != "" {
@@ -229,7 +257,7 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 
 	var ngnVA *domain.VirtualAccount
 	if s.paystackClient != nil {
-		ngnVA, _ = s.paystackClient.ProvisionNGNAccount(ctx, userID, holderName)
+		ngnVA, _ = s.paystackClient.ProvisionNGNAccount(ctx, userID, holderName, email)
 	}
 	if ngnVA == nil {
 		ngnVA = &domain.VirtualAccount{
@@ -290,36 +318,76 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 	}
 
 	items := []provisionItem{
-		{Currency: domain.CurrencyNGN, InitialMinor: 250000000, VA: ngnVA}, // ₦2.5m
-		{Currency: domain.CurrencyUSD, InitialMinor: 845000, VA: usdVA},    // $8,450
-		{Currency: domain.CurrencyGBP, InitialMinor: 320050, VA: gbpVA},    // £3,200.50
-		{Currency: domain.CurrencyEUR, InitialMinor: 410000, VA: eurVA},    // €4,100
+		{Currency: domain.CurrencyNGN, InitialMinor: 0, VA: ngnVA},
+		{Currency: domain.CurrencyUSD, InitialMinor: 0, VA: usdVA},
+		{Currency: domain.CurrencyGBP, InitialMinor: 0, VA: gbpVA},
+		{Currency: domain.CurrencyEUR, InitialMinor: 0, VA: eurVA},
 	}
 
 	for _, item := range items {
-		publicID := fmt.Sprintf("fa_%s_%d", strings.ToLower(string(item.Currency)), userID)
+		// 1. Locate existing financial account for this user and currency, or insert a new one
 		var faID string
 		err := s.pool.QueryRow(ctx, `
-			INSERT INTO financial_accounts (public_id, user_id, currency, asset_type, available_balance_minor, ledger_balance_minor, status)
-			VALUES ($1, $2, $3, 'fiat', $4, $4, 'active')
-			ON CONFLICT (user_id, currency, asset_type, asset_network) DO UPDATE
-			SET updated_at = NOW()
-			RETURNING id::text
-		`, publicID, userID, string(item.Currency), item.InitialMinor).Scan(&faID)
-		if err != nil {
-			continue
+			SELECT id::text FROM financial_accounts 
+			WHERE user_id = $1 AND currency = $2 AND asset_type = 'fiat'
+			ORDER BY created_at ASC
+			LIMIT 1
+		`, userID, string(item.Currency)).Scan(&faID)
+
+		if err != nil || faID == "" {
+			publicID := crypto.GeneratePublicID("fac")
+			err = s.pool.QueryRow(ctx, `
+				INSERT INTO financial_accounts (public_id, user_id, currency, asset_type, available_balance_minor, ledger_balance_minor, status)
+				VALUES ($1, $2, $3, 'fiat', $4, $4, 'active')
+				RETURNING id::text
+			`, publicID, userID, string(item.Currency), item.InitialMinor).Scan(&faID)
+			if err != nil {
+				continue
+			}
+		} else {
+			// Update status if it was inactive or update balance if zero
+			_, _ = s.pool.Exec(ctx, `
+				UPDATE financial_accounts 
+				SET status = 'active', 
+				    available_balance_minor = CASE WHEN available_balance_minor = 0 THEN $2 ELSE available_balance_minor END,
+				    ledger_balance_minor = CASE WHEN ledger_balance_minor = 0 THEN $2 ELSE ledger_balance_minor END,
+				    updated_at = NOW() 
+				WHERE id = $1::uuid
+			`, faID, item.InitialMinor)
 		}
 
-		// Insert or update payment_account
-		_, _ = s.pool.Exec(ctx, `
-			INSERT INTO payment_accounts (
-				financial_account_id, user_id, provider, account_name, account_number,
-				bank_name, routing_number, sort_code, iban, bic_swift, deposit_address, status
-			) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
-		`, faID, userID, item.VA.Provider, item.VA.AccountName, item.VA.AccountNumber,
-			item.VA.BankName, item.VA.RoutingNumber, item.VA.SortCode, item.VA.IBAN, item.VA.BIC, item.VA.DepositAddress)
+		// 2. Check if payment_account already exists for this financial_account_id
+		var paID string
+		_ = s.pool.QueryRow(ctx, `SELECT id::text FROM payment_accounts WHERE financial_account_id = $1::uuid LIMIT 1`, faID).Scan(&paID)
 
-		// Ensure customer ledger account exists
+		if paID == "" {
+			_, _ = s.pool.Exec(ctx, `
+				INSERT INTO payment_accounts (
+					financial_account_id, user_id, provider, account_name, account_number,
+					bank_name, routing_number, sort_code, iban, bic_swift, deposit_address, status
+				) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
+			`, faID, userID, item.VA.Provider, item.VA.AccountName, item.VA.AccountNumber,
+				item.VA.BankName, item.VA.RoutingNumber, item.VA.SortCode, item.VA.IBAN, item.VA.BIC, item.VA.DepositAddress)
+		} else {
+			_, _ = s.pool.Exec(ctx, `
+				UPDATE payment_accounts
+				SET provider = $2,
+					account_name = CASE WHEN account_name = '' THEN $3 ELSE account_name END,
+					account_number = CASE WHEN account_number = '' OR account_number IS NULL THEN $4 ELSE account_number END,
+					bank_name = CASE WHEN bank_name = '' OR bank_name IS NULL THEN $5 ELSE bank_name END,
+					routing_number = CASE WHEN routing_number = '' OR routing_number IS NULL THEN $6 ELSE routing_number END,
+					sort_code = CASE WHEN sort_code = '' OR sort_code IS NULL THEN $7 ELSE sort_code END,
+					iban = CASE WHEN iban = '' OR iban IS NULL THEN $8 ELSE iban END,
+					bic_swift = CASE WHEN bic_swift = '' OR bic_swift IS NULL THEN $9 ELSE bic_swift END,
+					deposit_address = CASE WHEN deposit_address = '' OR deposit_address IS NULL THEN $10 ELSE deposit_address END,
+					status = 'active',
+					updated_at = NOW()
+				WHERE id = $1::uuid
+			`, paID, item.VA.Provider, item.VA.AccountName, item.VA.AccountNumber,
+				item.VA.BankName, item.VA.RoutingNumber, item.VA.SortCode, item.VA.IBAN, item.VA.BIC, item.VA.DepositAddress)
+		}
+
+		// 3. Ensure customer ledger account exists
 		if s.ledgerSvc != nil {
 			_, _ = s.ledgerSvc.EnsureCustomerLedgerAccount(ctx, faID, item.Currency)
 		}

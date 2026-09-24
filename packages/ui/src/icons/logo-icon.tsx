@@ -1,3 +1,5 @@
+import type { SVGProps } from "react";
+
 interface LogoIconProps extends SVGProps<SVGSVGElement> {
 	textColor?: string;
 }

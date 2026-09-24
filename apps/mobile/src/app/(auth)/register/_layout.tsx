@@ -1,7 +1,7 @@
-import { Stack } from 'expo-router';
-import React from 'react';
+import { Stack } from "expo-router";
+import React from "react";
 
-import { RegisterProvider } from '@/context/register-context';
+import { RegisterProvider } from "@/context/register-context";
 
 export default function RegisterLayout() {
   return (
@@ -9,8 +9,9 @@ export default function RegisterLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
-        }}>
+          animation: "slide_from_right",
+        }}
+      >
         <Stack.Screen name="index" />
         <Stack.Screen name="email" />
         <Stack.Screen name="verify-email" />
@@ -19,8 +20,9 @@ export default function RegisterLayout() {
         <Stack.Screen name="verify-phone" />
         <Stack.Screen name="personal-info" />
         <Stack.Screen name="address" />
-        <Stack.Screen name="pin" />
         <Stack.Screen name="referral" />
+        <Stack.Screen name="bvn" />
+        <Stack.Screen name="pin" />
       </Stack>
     </RegisterProvider>
   );

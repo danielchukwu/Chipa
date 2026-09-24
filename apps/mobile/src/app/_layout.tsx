@@ -11,6 +11,8 @@ import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { AuthProvider } from "@/context/auth-context";
 import { CardsProvider } from "@/context/cards-context";
 import { RecentConversionsProvider } from "@/context/recent-conversions-context";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/api";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,10 +33,11 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <CardsProvider>
-        <RecentConversionsProvider>
-          <ThemeProvider value={DefaultTheme}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CardsProvider>
+          <RecentConversionsProvider>
+            <ThemeProvider value={DefaultTheme}>
           <StatusBar style="dark" />
           <AnimatedSplashOverlay />
           <Stack screenOptions={{ headerShown: false }}>
@@ -143,5 +146,6 @@ export default function RootLayout() {
         </RecentConversionsProvider>
       </CardsProvider>
     </AuthProvider>
+  </QueryClientProvider>
   );
 }

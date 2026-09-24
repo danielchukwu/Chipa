@@ -144,7 +144,17 @@ export default function LoginEmailScreen() {
                     disabled={!canContinue}
                   />
 
-                  <View className="flex-row items-center justify-center mt-5">
+                  <Pressable
+                    onPress={() => router.push('/(auth)/login/forgot-password' as any)}
+                    hitSlop={8}
+                    className="items-center mt-5"
+                  >
+                    <Text className="font-sans text-sm text-gray-500">
+                      Forgot password?
+                    </Text>
+                  </Pressable>
+
+                  <View className="flex-row items-center justify-center mt-4">
                     <Text className="font-sans text-sm text-gray-500">
                       Don&apos;t have an account?{" "}
                     </Text>

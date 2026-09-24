@@ -31,6 +31,7 @@ export default function ReferralCodeScreen() {
         dob: data.dob,
         countryCode: data.countryOfResidence?.code || data.country?.code || "NG",
         currentCountry: data.countryOfResidence?.id || data.country?.id || 161,
+        phoneNumber: data.phoneNumber?.trim() || undefined,
         state: data.state,
         city: data.city,
         streetAddress: data.streetAddress,
@@ -39,8 +40,15 @@ export default function ReferralCodeScreen() {
         referralCode: hasCode ? data.referralCode.trim() : undefined,
       });
 
-      // 2. Navigate to Set PIN screen to finalize onboarding
-      router.push("/register/pin" as any);
+      // 2. If Nigerian resident/country, route to BVN verification; otherwise proceed to PIN
+      const isNigeria =
+        (data.countryOfResidence?.code || data.country?.code || "NG").toUpperCase() === "NG";
+
+      if (isNigeria) {
+        router.push("/register/bvn" as any);
+      } else {
+        router.push("/register/pin" as any);
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to save onboarding details. Please try again.");
     } finally {

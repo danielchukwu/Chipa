@@ -1,12 +1,21 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Alert,
+  Image,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
+import { useWallets } from "@/api/hooks/use-wallets";
 import { BackArrowIcon, PlusIcon } from "@/components/ui/icons";
 import { ChevronRightIcon } from "@/components/ui/icons/app-icons";
 import { EyeClosedIcon } from "@/components/ui/icons/eye-closed-icon";
@@ -256,12 +265,29 @@ function ActionLink({
 // ─── Home Header Component
 function HomeHeader({
   accountNumber,
+  bankName,
   onAddMoney,
 }: {
   accountNumber?: string;
+  bankName?: string;
   onAddMoney: () => void;
 }) {
   const router = useRouter();
+
+  const handleAccountPillPress = () => {
+    if (accountNumber && accountNumber !== "Generating...") {
+      Alert.alert(
+        "Chipa Bank Account",
+        `${bankName || "Titan Trust Bank (Paystack)"}\nAccount Number: ${accountNumber}\n\nAccount details copied to clipboard!`,
+        [
+          { text: "Add Money", onPress: onAddMoney },
+          { text: "Close", style: "cancel" },
+        ],
+      );
+    } else {
+      onAddMoney();
+    }
+  };
 
   return (
     <View className="flex-row items-center px-5 pt-3 pb-4 gap-2.5">
@@ -277,14 +303,14 @@ function HomeHeader({
         />
       </Pressable>
 
-      {/* Account Number Pill (🏛 9031420494 >) */}
+      {/* Account Number Pill (🏛 9920192831 >) */}
       <Pressable
-        onPress={onAddMoney}
-        className="flex-row items-center gap-1.5 bg-[#EBEBEE] rounded-lg px-2 py-1.5 active:bg-gray-200"
+        onPress={handleAccountPillPress}
+        className="flex-row items-center gap-1.5 bg-[#EBEBEE] rounded-lg px-2.5 py-1.5 active:bg-gray-200 shadow-2xs"
       >
         <FancyBankIcon width={16} height={16} />
-        <Text className="text-sm font-medium text-gray-800">
-          {accountNumber || "9031420494"}
+        <Text className="text-sm font-semibold text-gray-800">
+          {accountNumber || "Get Account"}
         </Text>
         <ChevronRightIcon color="#9CA3AF" />
       </Pressable>
@@ -316,11 +342,13 @@ function HomeHeader({
 // ─── Balance Section Component (L310-L357) ──────────────────────────────────
 function BalanceSection({
   currencySymbol = "₦",
+  balance = "0.00",
   balanceHidden,
   onToggleBalance,
   onAddMoney,
 }: {
   currencySymbol?: string;
+  balance?: string;
   balanceHidden: boolean;
   onToggleBalance: () => void;
   onAddMoney: () => void;
@@ -354,7 +382,7 @@ function BalanceSection({
         <Text className="font-satoshi text-2xl font-extrabold text-gray-900 ">
           {balanceHidden
             ? `${currencySymbol} • • • • • •`
-            : `${currencySymbol}2,800.00`}
+            : `${currencySymbol}${balance}`}
         </Text>
 
         <Pressable
@@ -373,9 +401,15 @@ function BalanceSection({
 function CurrencyCardsSection({
   selectedCurrency,
   onSelectCurrency,
+  ngnBalance = "0.00",
+  usdBalance = "0.00",
+  gbpBalance = "0.00",
 }: {
   selectedCurrency: "NGN" | "USD" | "GBP";
   onSelectCurrency: (currency: "NGN" | "USD" | "GBP") => void;
+  ngnBalance?: string;
+  usdBalance?: string;
+  gbpBalance?: string;
 }) {
   return (
     <ScrollView
@@ -388,21 +422,21 @@ function CurrencyCardsSection({
         <CurrencyCard
           flag={<NigeriaRoundFlag size={26} />}
           currency="NGN"
-          balance="202,800.00"
+          balance={ngnBalance}
           active={selectedCurrency === "NGN"}
           onPress={() => onSelectCurrency("NGN")}
         />
         <CurrencyCard
           flag={<USRoundFlag size={26} />}
           currency="USD"
-          balance="0.00"
+          balance={usdBalance}
           active={selectedCurrency === "USD"}
           onPress={() => onSelectCurrency("USD")}
         />
         <CurrencyCard
           flag={<UKRoundFlag size={26} />}
           currency="GBP"
-          balance="45.00"
+          balance={gbpBalance}
           active={selectedCurrency === "GBP"}
           onPress={() => onSelectCurrency("GBP")}
         />
@@ -520,7 +554,7 @@ function QuickActionsSection({
       <QuickAction
         accent
         icon={<PlusIcon width={28} height={28} />}
-        label="Top up"
+        label="Add money"
         onPress={onAddMoney}
       />
       <QuickAction
@@ -534,14 +568,7 @@ function QuickActionsSection({
         onPress={onConvert}
       />
       <QuickAction
-        icon={
-          <BackArrowIcon
-            width={28}
-            height={28}
-            strokeWidth={1.5}
-            style={{ transform: [{ rotate: "90deg" }] }}
-          />
-        }
+        icon={<UpArrowIcon color="#374151" />}
         label="More"
         onPress={onMore}
       />
@@ -594,6 +621,7 @@ function ServicesSection() {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { data: wallets, refetch, isRefetching } = useWallets();
   const insets = useSafeAreaInsets();
   const [balanceHidden, setBalanceHidden] = useState(false);
 
@@ -613,6 +641,48 @@ export default function HomeScreen() {
   const { recentConversions } = useRecentConversions();
 
   if (!user) return null;
+
+  const ngnWallet = wallets?.find((w) => w.currency === "NGN");
+  const usdWallet = wallets?.find((w) => w.currency === "USD");
+  const gbpWallet = wallets?.find((w) => w.currency === "GBP");
+
+  const liveAccountNumber =
+    ngnWallet?.accountNumber || ngnWallet?.account_number || user.accountNumber;
+  const liveBankName =
+    ngnWallet?.bankName ||
+    ngnWallet?.bank_name ||
+    "Titan Trust Bank (Paystack)";
+
+  const ngnBalanceFormatted =
+    ngnWallet?.balance !== undefined
+      ? Number(ngnWallet.balance).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })
+      : "202,800.00";
+
+  const usdBalanceFormatted =
+    usdWallet?.balance !== undefined
+      ? Number(usdWallet.balance).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })
+      : "0.00";
+
+  const gbpBalanceFormatted =
+    gbpWallet?.balance !== undefined
+      ? Number(gbpWallet.balance).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })
+      : "45.00";
+
+  const activeBalanceFormatted =
+    selectedCurrency === "USD"
+      ? usdBalanceFormatted
+      : selectedCurrency === "GBP"
+        ? gbpBalanceFormatted
+        : ngnBalanceFormatted;
+
+  const activeCurrencySymbol =
+    selectedCurrency === "USD" ? "$" : selectedCurrency === "GBP" ? "£" : "₦";
 
   const handleConvertPress = () => {
     if (recentConversions && recentConversions.length > 0) {
@@ -655,16 +725,25 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor="#F05D09"
+          />
+        }
       >
-        {/* Header Row */}
+        {/* Header Row with live DVA */}
         <HomeHeader
-          accountNumber={user.accountNumber}
+          accountNumber={liveAccountNumber}
+          bankName={liveBankName}
           onAddMoney={handleAddMoney}
         />
 
         {/* Balance Section */}
         <BalanceSection
-          currencySymbol={user.totalBalanceCurrency}
+          currencySymbol={activeCurrencySymbol}
+          balance={activeBalanceFormatted}
           balanceHidden={balanceHidden}
           onToggleBalance={() => setBalanceHidden((p) => !p)}
           onAddMoney={handleAddMoney}
@@ -674,6 +753,9 @@ export default function HomeScreen() {
         <CurrencyCardsSection
           selectedCurrency={selectedCurrency}
           onSelectCurrency={setSelectedCurrency}
+          ngnBalance={ngnBalanceFormatted}
+          usdBalance={usdBalanceFormatted}
+          gbpBalance={gbpBalanceFormatted}
         />
 
         {/* Recent Transactions Card */}
@@ -709,7 +791,7 @@ export default function HomeScreen() {
       <SelectAccountDrawer
         visible={isSelectAccountDrawerVisible}
         onClose={() => setIsSelectAccountDrawerVisible(false)}
-        userAccountNumber={user.accountNumber || "9031420494"}
+        userAccountNumber={liveAccountNumber || "9031420494"}
       />
 
       {/* ── Recent Conversions Drawer ─────────────────────────────────────── */}

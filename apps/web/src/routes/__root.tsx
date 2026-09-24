@@ -1,11 +1,11 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import HeaderWaitlist from "#/components/HeaderWaitlist";
 import Footer from "../components/Footer";
-import Header from "../components/Header";
 import WaitlistModal from "../components/WaitlistModal";
+import ConvexClientProvider from "../integrations/convex/provider";
 import PostHogProvider from "../integrations/posthog/provider";
-
 import appCss from "../styles.css?url";
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'light';var root=document.documentElement;root.classList.remove('dark');root.classList.add('light');root.setAttribute('data-theme','light');root.style.colorScheme='light';}catch(e){}})();`;
@@ -34,6 +34,20 @@ export const Route = createRootRoute({
 				rel: "stylesheet",
 				href: appCss,
 			},
+			{
+				rel: "icon",
+				href: "/favicon.ico",
+				sizes: "any",
+			},
+			{
+				rel: "icon",
+				type: "image/png",
+				href: "/icon.png",
+			},
+			{
+				rel: "apple-touch-icon",
+				href: "/icon.png",
+			},
 		],
 	}),
 	shellComponent: RootDocument,
@@ -46,23 +60,25 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 				<HeadContent />
 			</head>
-			<body className="font-sans antialiased bg-[#FCFAF7] text-[#111111] selection:bg-[#FF793F]/20 selection:text-[#FF793F]">
+			<body className="font-sans antialiased bg-white text-[#111111] selection:bg-[#FF793F]/20 selection:text-[#FF793F]">
 				<PostHogProvider>
-					<Header />
-					{children}
-					<Footer />
-					<WaitlistModal />
-					<TanStackDevtools
-						config={{
-							position: "bottom-right",
-						}}
-						plugins={[
-							{
-								name: "Tanstack Router",
-								render: <TanStackRouterDevtoolsPanel />,
-							},
-						]}
-					/>
+					<ConvexClientProvider>
+						<HeaderWaitlist />
+						{children}
+						<Footer />
+						<WaitlistModal />
+						<TanStackDevtools
+							config={{
+								position: "bottom-right",
+							}}
+							plugins={[
+								{
+									name: "Tanstack Router",
+									render: <TanStackRouterDevtoolsPanel />,
+								},
+							]}
+						/>
+					</ConvexClientProvider>
 				</PostHogProvider>
 				<Scripts />
 			</body>

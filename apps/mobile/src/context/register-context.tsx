@@ -42,6 +42,7 @@ export interface RegisterData {
   streetAddress: string;
   city: string;
   postCode: string;
+  bvn: string;
   pin: string;
   confirmPin: string;
   referralCode: string;
@@ -76,6 +77,7 @@ const initialData: RegisterData = {
   streetAddress: '',
   city: '',
   postCode: '',
+  bvn: '',
   pin: '',
   confirmPin: '',
   referralCode: '',

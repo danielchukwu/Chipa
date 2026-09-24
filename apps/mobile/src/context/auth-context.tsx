@@ -1,5 +1,5 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
-import { chipaApi, clearAuthTokens } from '@/lib/api';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { chipaApi, clearAuthTokens, onSessionExpired, tokenStorage } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -75,7 +75,7 @@ interface AuthContextType {
   loginWithPin: (pin: string) => Promise<{ success: boolean; error?: string }>;
   login: (email: string, password: string, pin: string) => Promise<boolean>;
   register: (data?: { firstName?: string; lastName?: string; email?: string }) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -126,6 +126,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loginForm, setLoginForm] = useState<LoginFormData>(initialLoginForm);
   const [preAuthData, setPreAuthData] = useState<PreAuthData | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    // 1. Initialize tokens from hardware secure store on app startup
+    (async () => {
+      try {
+        const { accessToken } = await tokenStorage.init();
+        if (accessToken && isMounted) {
+          const profile = await chipaApi.getMe();
+          if (profile && isMounted) {
+            setUser({
+              ...MOCK_USER,
+              id: String(profile.id || 'usr_001'),
+              firstName: profile.first_name || profile.firstName || 'Daniel',
+              lastName: profile.last_name || profile.lastName || 'Chukwu',
+              email: profile.email || 'daniel@chipa.com',
+              accountNumber: profile.bank_account_number || MOCK_USER.accountNumber,
+              avatarInitials: `${(profile.first_name?.[0] || profile.firstName?.[0] || 'D')}${(profile.last_name?.[0] || profile.lastName?.[0] || 'C')}`.toUpperCase(),
+            });
+          }
+        }
+      } catch {
+        // Silent fallback for offline / unauthenticated states
+      }
+    })();
+
+    // 2. Listen for session expiry event triggered by 401 token refresh failure
+    const unsubscribe = onSessionExpired(() => {
+      if (isMounted) {
+        setUser(null);
+        setPreAuthData(null);
+        setLoginForm(initialLoginForm);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const updateLoginForm = useCallback(
     <K extends keyof LoginFormData>(field: K, value: LoginFormData[K]) => {
@@ -240,8 +281,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const logout = useCallback(() => {
-    clearAuthTokens();
+  const logout = useCallback(async () => {
+    try {
+      await chipaApi.logout();
+    } catch {
+      // Ensure tokens are always cleared even if backend call fails
+      clearAuthTokens();
+    }
     setUser(null);
     setPreAuthData(null);
     setLoginForm(initialLoginForm);

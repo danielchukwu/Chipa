@@ -4,7 +4,7 @@
 @source "./**/*.{ts,tsx}";
 
 :root {
-	--bg-landing: #fcfaf7;
+	/* --bg-landing: #ffffff; */
 	--card-cream: #faf7f2;
 	--card-green: #eef8ee;
 	--card-blue: #edf5fe;

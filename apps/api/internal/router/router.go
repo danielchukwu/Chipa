@@ -94,8 +94,9 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	cardSvc := fintechservice.NewCardService(pool, sandboxCardProvider, walletSvc, ledgerSvc)
 	fxSvc := fintechservice.NewFXService(walletSvc)
 	vasSvc := fintechservice.NewVASService(sandboxVASProvider, walletSvc)
-	pinSvc := fintechservice.NewPINService(pool)
+	pinSvc := fintechservice.NewPINService(pool, walletSvc)
 	kycSvc := fintechservice.NewKYCService(pool, paystackClient)
+	kycSvc.SetWalletService(walletSvc)
 
 	utilsInstance := utils.NewUtils(pool)
 	auditService := audit.NewAuditService(q)
@@ -203,9 +204,14 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	mainRouter.With(authMiddleware).Get("/api/v1/users/me", usersH.GetMe)
 	mainRouter.With(authMiddleware).Patch("/api/v1/users/me", usersH.UpdateProfile)
 	mainRouter.With(authMiddleware).Patch("/api/v1/users/me/onboarding", authH.SaveOnboardingProfile)
+	mainRouter.With(authMiddleware).Patch("/api/v1/onboarding", authH.SaveOnboardingProfile)
+	mainRouter.With(authMiddleware).Patch("/api/v1/auth/onboarding", authH.SaveOnboardingProfile)
+	mainRouter.With(authMiddleware).Post("/api/v1/users/phone", authH.SavePhoneNumber)
 	mainRouter.With(authMiddleware).Post("/api/v1/users/phone/otp", authH.SendPhoneOTP)
 	mainRouter.With(authMiddleware).Post("/api/v1/users/phone/verify", authH.VerifyPhoneOTP)
 	mainRouter.With(authMiddleware).Post("/api/v1/users/pin/set", pinH.SetPIN)
+	mainRouter.With(authMiddleware).Post("/api/v1/auth/pin", pinH.SetPIN)
+	mainRouter.With(authMiddleware).Post("/api/v1/pin", pinH.SetPIN)
 	mainRouter.With(authMiddleware).Post("/api/v1/users/pin/verify", pinH.VerifyPIN)
 
 	// Multi-Currency Wallets (NGN, USD, GBP, EUR) & Double-Entry Ledger
@@ -216,6 +222,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	// Progressive KYC Compliance Tiers (0-3) & AML Screening
 	mainRouter.With(authMiddleware).Get("/api/v1/kyc/status", kycH.GetKYCStatus)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier1", kycH.SubmitTier1)
+	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier1/pan-african", kycH.SubmitTier1PanAfrican)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier2", kycH.SubmitTier2)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier3", kycH.SubmitTier3)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/compliance-screening", kycH.UpdateComplianceScreening)
@@ -264,13 +271,23 @@ func corsMiddleware(next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 
-		w.Header().Set("Vary", "Origin")
+		w.Header().Set("Vary", "Origin, Access-Control-Request-Method, Access-Control-Request-Headers")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set(
 			"Access-Control-Allow-Methods",
 			strings.Join([]string{http.MethodOptions, http.MethodPost, http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodDelete}, ", "),
 		)
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Cookie")
+
+		reqHeaders := r.Header.Get("Access-Control-Request-Headers")
+		allowedHeaders := "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, Cookie, X-Client-Platform, Idempotency-Key, Origin, X-Requested-With"
+		if reqHeaders != "" {
+			w.Header().Set("Access-Control-Allow-Headers", allowedHeaders+", "+reqHeaders)
+		} else {
+			w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
+		}
+
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type, Idempotency-Key, X-Total-Count")
+		w.Header().Set("Access-Control-Max-Age", "86400")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

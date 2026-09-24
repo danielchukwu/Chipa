@@ -12,6 +12,7 @@ import (
 	vasprovider "chipa/api/internal/provider/vas"
 	"chipa/api/internal/service/fintech"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,7 +28,7 @@ func setupTestServices() (*fintech.WalletService, *fintech.CardService, *fintech
 	cardSvc := fintech.NewCardService(nil, cardProv, walletSvc, ledgerSvc)
 	fxSvc := fintech.NewFXService(walletSvc)
 	vasSvc := fintech.NewVASService(vasProv, walletSvc)
-	pinSvc := fintech.NewPINService(nil)
+	pinSvc := fintech.NewPINService(nil, walletSvc)
 
 	return walletSvc, cardSvc, fxSvc, vasSvc, pinSvc
 }
@@ -65,6 +66,7 @@ func TestWalletService(t *testing.T) {
 	assert.Equal(t, "CLJUGB21", eurWallet.BIC)
 
 	// Test Debit & Credit
+	_ = walletSvc.CreditWallet(ctx, userID, domain.CurrencyUSD, 100.00, "Daniel Adekunle")
 	initialUSD := usdWallet.Balance
 	err = walletSvc.DebitWallet(ctx, userID, domain.CurrencyUSD, 50.00, "Daniel Adekunle")
 	assert.NoError(t, err)
@@ -76,7 +78,7 @@ func TestWalletService(t *testing.T) {
 }
 
 func TestCardService(t *testing.T) {
-	_, cardSvc, _, _, _ := setupTestServices()
+	walletSvc, cardSvc, _, _, _ := setupTestServices()
 	ctx := context.Background()
 	userID := int64(202)
 
@@ -102,6 +104,7 @@ func TestCardService(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Fund Card from USD Wallet
+	_ = walletSvc.CreditWallet(ctx, userID, domain.CurrencyUSD, 500.00, "Daniel Adekunle")
 	err = cardSvc.FundCard(ctx, userID, newCard.ID, 100.00, domain.CurrencyUSD, "Daniel Adekunle")
 	assert.NoError(t, err)
 
@@ -111,9 +114,10 @@ func TestCardService(t *testing.T) {
 }
 
 func TestFXService(t *testing.T) {
-	_, _, fxSvc, _, _ := setupTestServices()
+	walletSvc, _, fxSvc, _, _ := setupTestServices()
 	ctx := context.Background()
 	userID := int64(303)
+	_ = walletSvc.CreditWallet(ctx, userID, domain.CurrencyUSD, 500.00, "Daniel Adekunle")
 
 	// Get Live Rates
 	rates, err := fxSvc.GetRates(ctx)
@@ -135,9 +139,10 @@ func TestFXService(t *testing.T) {
 }
 
 func TestVASService(t *testing.T) {
-	_, _, _, vasSvc, _ := setupTestServices()
+	walletSvc, _, _, vasSvc, _ := setupTestServices()
 	ctx := context.Background()
 	userID := int64(404)
+	_ = walletSvc.CreditWallet(ctx, userID, domain.CurrencyNGN, 50000.00, "Daniel Adekunle")
 
 	// Categories
 	categories := vasSvc.GetCategories(ctx)
@@ -164,7 +169,7 @@ func TestVASService(t *testing.T) {
 }
 
 func TestPINService(t *testing.T) {
-	_, _, _, _, pinSvc := setupTestServices()
+	walletSvc, _, _, _, pinSvc := setupTestServices()
 	ctx := context.Background()
 	userID := int64(505)
 
@@ -184,6 +189,22 @@ func TestPINService(t *testing.T) {
 	validNew, err := pinSvc.VerifyPIN(ctx, userID, "9876")
 	require.NoError(t, err)
 	assert.True(t, validNew)
+
+	// Verify that setting PIN automatically provisioned NGN Dedicated Virtual Account
+	wallets, err := walletSvc.GetUserWallets(ctx, userID, "Test User")
+	require.NoError(t, err)
+	assert.NotEmpty(t, wallets)
+	var ngnWallet *domain.VirtualAccount
+	for _, w := range wallets {
+		if w.Currency == domain.CurrencyNGN {
+			ngnWallet = w
+			break
+		}
+	}
+	require.NotNil(t, ngnWallet)
+	assert.NotEmpty(t, ngnWallet.AccountNumber)
+	assert.Contains(t, ngnWallet.BankName, "Titan Trust Bank")
+	assert.Equal(t, "active", ngnWallet.Status)
 
 	// Rejects non-4-digit PIN
 	err = pinSvc.SetPIN(ctx, userID, "123")
@@ -215,5 +236,41 @@ func TestKYCService(t *testing.T) {
 	// Validate Tier 3 requires address and city
 	_, err = kycSvc.SubmitTier3(ctx, userID, "", "", "", "")
 	assert.Error(t, err)
+}
+
+func TestWalletService_LiveDB_AccountProvisioning(t *testing.T) {
+	ctx := context.Background()
+	dsn := "postgres://postgres:password@localhost:5436/chipa_db?sslmode=disable"
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Skip("PostgreSQL database not available on port 5436, skipping live DB test")
+		return
+	}
+	defer pool.Close()
+
+	if err := pool.Ping(ctx); err != nil {
+		t.Skip("Cannot ping PostgreSQL database on port 5436, skipping live DB test")
+		return
+	}
+
+	walletSvc := fintech.NewWalletService(pool, nil, nil, nil)
+
+	// User 1 had a bare financial account without payment account
+	ngnAcc, err := walletSvc.EnsureUserAccounts(ctx, 1)
+	require.NoError(t, err)
+	require.NotNil(t, ngnAcc)
+	assert.NotEmpty(t, ngnAcc.AccountNumber)
+	assert.Contains(t, ngnAcc.BankName, "Titan Trust Bank")
+
+	// Check all 4 wallets are returned
+	wallets, err := walletSvc.GetUserWallets(ctx, 1, "Daniel Chukwu")
+	require.NoError(t, err)
+	assert.Len(t, wallets, 4)
+
+	// Verify payment_accounts in database is now populated
+	var paymentAccCount int64
+	err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM payment_accounts WHERE user_id = 1").Scan(&paymentAccCount)
+	require.NoError(t, err)
+	assert.Equal(t, int64(4), paymentAccCount)
 }
 

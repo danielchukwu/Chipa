@@ -1,0 +1,2 @@
+ACCESS REDIS EMAIL RECORD:
+docker exec -it redis redis-cli -a password GET "register:email_otp:<your-email>"

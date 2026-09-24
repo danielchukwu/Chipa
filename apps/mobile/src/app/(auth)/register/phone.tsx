@@ -5,7 +5,6 @@ import { Pressable, Text, View } from "react-native";
 import { AuthScreenLayout } from "@/components/ui/auth-screen-layout";
 import { PhoneIcon } from "@/components/ui/icons/onboarding";
 import { PhoneInput } from "@/components/ui/input/phone-input";
-import { VerificationChannelDrawer } from "@/components/ui/verification-channel-drawer";
 import { useRegister } from "@/context/register-context";
 
 import { chipaApi } from "@/lib/api";
@@ -14,14 +13,13 @@ export default function EnterPhoneScreen() {
   const router = useRouter();
   const { data, updateField } = useRegister();
   const [error, setError] = useState("");
-  const [drawerVisible, setDrawerVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSkip = () => {
     router.push("/register/personal-info" as any);
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const cleaned = data.phoneNumber.replace(/\s+/g, "");
     if (!cleaned) {
       setError("Please enter your phone number");
@@ -33,25 +31,21 @@ export default function EnterPhoneScreen() {
     }
 
     setError("");
-    setDrawerVisible(true);
-  };
-
-  const handleSelectChannel = async (channel: "whatsapp" | "sms") => {
-    updateField("verificationChannel", channel);
-    setDrawerVisible(false);
     setLoading(true);
 
     try {
-      await chipaApi.sendPhoneOTP({
-        phoneNumber: data.phoneNumber,
-        channel,
+      // Store phone info in backend (unverified state for future verification)
+      await chipaApi.savePhoneNumber({
+        phoneNumber: data.phoneNumber.trim(),
         iso2: data.country?.code || "NG",
       });
-      router.push("/register/verify-phone" as any);
     } catch (err: any) {
-      setError(err?.message || "Failed to send verification code to your phone.");
+      // Graceful non-blocking fallback so registration progresses smoothly
+      console.warn("Could not save phone number immediately to API:", err?.message);
     } finally {
       setLoading(false);
+      updateField("phoneVerified", false);
+      router.push("/register/personal-info" as any);
     }
   };
 
@@ -86,13 +80,6 @@ export default function EnterPhoneScreen() {
           error={error}
         />
       </View>
-
-      {/* Screen 1: Verification Channel Bottom Drawer */}
-      <VerificationChannelDrawer
-        visible={drawerVisible}
-        onClose={() => setDrawerVisible(false)}
-        onSelectChannel={handleSelectChannel}
-      />
     </AuthScreenLayout>
   );
 }

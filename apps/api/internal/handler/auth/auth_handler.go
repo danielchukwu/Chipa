@@ -21,6 +21,7 @@ type AuthService interface {
 	SendForgotPasswordEmailOTP(ctx context.Context, email string) (auth.EmailOTPResult, error)
 	SendPhoneOTP(ctx context.Context, userID int64, phone, channel, iso2 string) error
 	VerifyPhoneOTP(ctx context.Context, userID int64, phone, otp, iso2 string) error
+	SavePhoneNumber(ctx context.Context, userID int64, phone, iso2 string) error
 	UpdateOnboardingProfile(ctx context.Context, userID int64, params auth.OnboardingProfileParams) error
 	CompleteOnboarding(ctx context.Context, userID int64, publicID string, params queries.UpdateOnboardingProfileParams, referrerUserID *int64, nin string) error
 	CheckNIN(ctx context.Context, nin string) bool
@@ -911,6 +912,50 @@ func (h *Handler) VerifyPhoneOTP(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// SavePhoneNumberRequest represents the payload to save a user's phone number without OTP
+type SavePhoneNumberRequest struct {
+	PhoneNumber string `json:"phoneNumber" validate:"required"`
+	Iso2        string `json:"iso2" validate:"omitempty"`
+}
+
+// @Summary Save Phone Number
+// @Description Stores user phone number without OTP verification for deferred verification
+// @Tags Auth
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param request body SavePhoneNumberRequest true "Save Phone Number request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 401 {object} map[string]interface{}
+// @Router /users/phone [post]
+func (h *Handler) SavePhoneNumber(w http.ResponseWriter, r *http.Request) {
+	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
+	if !ok {
+		return
+	}
+
+	var req SavePhoneNumberRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.Error())
+		return
+	}
+
+	if err := h.authService.SavePhoneNumber(r.Context(), claims.UserID, req.PhoneNumber, req.Iso2); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	h.utils.RespondSuccess(w, http.StatusOK, "Phone number saved successfully", map[string]interface{}{
+		"saved": true,
+	})
+}
+
 // SaveOnboardingProfileRequest represents the payload for the user's personal details, address, and optional referral
 type SaveOnboardingProfileRequest struct {
 	FirstName      string `json:"firstName" validate:"omitempty,min=2,max=50" example:"Daniel"`
@@ -919,6 +964,7 @@ type SaveOnboardingProfileRequest struct {
 	DateOfBirth    string `json:"dateOfBirth" validate:"omitempty" example:"1998-05-14"`
 	CountryID      int16  `json:"countryId,omitempty" validate:"omitempty" example:"161"`
 	CountryCode    string `json:"countryCode,omitempty" validate:"omitempty" example:"NG"`
+	PhoneNumber    string `json:"phoneNumber,omitempty" validate:"omitempty" example:"+2348012345678"`
 	State          string `json:"state,omitempty" validate:"omitempty" example:"Lagos"`
 	City           string `json:"city,omitempty" validate:"omitempty" example:"Ikeja"`
 	StreetAddress  string `json:"streetAddress,omitempty" validate:"omitempty" example:"14 Admiralty Way"`
@@ -941,6 +987,8 @@ func (r *SaveOnboardingProfileRequest) UnmarshalJSON(data []byte) error {
 		CurrentCountry   *int16  `json:"current_country"`
 		CurrentCountryC  *int16  `json:"currentCountry"`
 		CountryCodeSnake *string `json:"country_code"`
+		PhoneNumberSnake *string `json:"phone_number"`
+		PhoneShort       *string `json:"phone"`
 		CurrentState     *string `json:"current_state"`
 		CurrentCity      *string `json:"current_city"`
 		StreetAddressS   *string `json:"street_address"`
@@ -999,6 +1047,12 @@ func (r *SaveOnboardingProfileRequest) UnmarshalJSON(data []byte) error {
 	if r.ReferralCode == "" && aux.ReferralCodeS != nil {
 		r.ReferralCode = *aux.ReferralCodeS
 	}
+	if r.PhoneNumber == "" && aux.PhoneNumberSnake != nil {
+		r.PhoneNumber = *aux.PhoneNumberSnake
+	}
+	if r.PhoneNumber == "" && aux.PhoneShort != nil {
+		r.PhoneNumber = *aux.PhoneShort
+	}
 
 	return nil
 }
@@ -1042,6 +1096,7 @@ func (h *Handler) SaveOnboardingProfile(w http.ResponseWriter, r *http.Request) 
 		MiddleName:     req.MiddleName,
 		LastName:       req.LastName,
 		DateOfBirth:    req.DateOfBirth,
+		PhoneNumber:    req.PhoneNumber,
 		CurrentCountry: currentCountry,
 		CurrentState:   req.State,
 		CurrentCity:    req.City,

@@ -61,6 +61,7 @@ type Tier1Payload struct {
 type KYCService struct {
 	pool           *pgxpool.Pool
 	paystackClient *paystack.PaystackClient
+	walletSvc      *WalletService
 	vault          *crypto.Vault
 }
 
@@ -76,6 +77,10 @@ func NewKYCService(pool *pgxpool.Pool, paystackClient *paystack.PaystackClient, 
 		paystackClient: paystackClient,
 		vault:          v,
 	}
+}
+
+func (s *KYCService) SetWalletService(ws *WalletService) {
+	s.walletSvc = ws
 }
 
 func (s *KYCService) GetKYCStatus(ctx context.Context, userID int64) (*KYCStatusResponse, error) {
@@ -474,6 +479,11 @@ func (s *KYCService) SubmitTier1PanAfrican(ctx context.Context, userID int64, pa
 		if err != nil {
 			return nil, fmt.Errorf("failed to update user KYC tier: %w", err)
 		}
+	}
+
+	// Auto-provision or update dedicated accounts when identity is verified
+	if s.walletSvc != nil {
+		_, _ = s.walletSvc.EnsureUserAccounts(ctx, userID)
 	}
 
 	return s.GetKYCStatus(ctx, userID)

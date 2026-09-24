@@ -49,11 +49,12 @@ func (h *Handler) GetKYCStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 type SubmitTier1Request struct {
-	CountryCode  string `json:"country_code,omitempty" example:"NG"`
-	DocumentType string `json:"document_type,omitempty" example:"bvn"` // bvn, nin, ghana_card, kra_pin, huduma_namba, sa_id, national_id
-	IDNumber     string `json:"id_number,omitempty" example:"22222222222"`
-	BVN          string `json:"bvn,omitempty" example:"22222222222"`
-	NIN          string `json:"nin,omitempty" example:"11111111111"`
+	CountryCode    string `json:"country_code,omitempty" example:"NG"`
+	DocumentType   string `json:"document_type,omitempty" example:"bvn"` // bvn, nin, ghana_card, kra_pin, huduma_namba, sa_id, national_id
+	IDNumber       string `json:"id_number,omitempty" example:"22222222222"`
+	DocumentNumber string `json:"document_number,omitempty" example:"22222222222"`
+	BVN            string `json:"bvn,omitempty" example:"22222222222"`
+	NIN            string `json:"nin,omitempty" example:"11111111111"`
 }
 
 // SubmitTier1 godoc
@@ -81,12 +82,26 @@ func (h *Handler) SubmitTier1(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	idNum := req.IDNumber
+	if idNum == "" {
+		idNum = req.DocumentNumber
+	}
+
+	bvn := req.BVN
+	if bvn == "" && req.DocumentType == "bvn" {
+		bvn = idNum
+	}
+	nin := req.NIN
+	if nin == "" && req.DocumentType == "nin" {
+		nin = idNum
+	}
+
 	status, err := h.kycSvc.SubmitTier1PanAfrican(r.Context(), claims.UserID, fintechservice.Tier1Payload{
 		CountryCode:  req.CountryCode,
 		DocumentType: req.DocumentType,
-		IDNumber:     req.IDNumber,
-		BVN:          req.BVN,
-		NIN:          req.NIN,
+		IDNumber:     idNum,
+		BVN:          bvn,
+		NIN:          nin,
 	})
 	if err != nil {
 		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
@@ -96,6 +111,22 @@ func (h *Handler) SubmitTier1(w http.ResponseWriter, r *http.Request) {
 	h.utils.RespondSuccess(w, http.StatusOK, "Tier 1 verified successfully", map[string]interface{}{
 		"kyc": status,
 	})
+}
+
+// @Summary      Submit Tier 1 Pan-African KYC (BVN, NIN, Ghana Card, KRA PIN, SA ID)
+// @Description  Verifies primary identity credentials across African jurisdictions (Nigeria BVN/NIN, Ghana Card, Kenya KRA PIN, South Africa ID) to upgrade account limits and provision DVA.
+// @Tags         KYC
+// @Security     BearerAuth
+// @Accept       json
+// @Produce      json
+// @Param        request body SubmitTier1Request true "Identity document details"
+// @Success      200 {object} map[string]interface{} "Upgraded to Tier 1"
+// @Failure      400 {object} map[string]interface{} "Invalid input"
+// @Failure      401 {object} map[string]interface{} "Unauthorized"
+// @Failure      500 {object} map[string]interface{} "Verification failed"
+// @Router       /kyc/tier1/pan-african [post]
+func (h *Handler) SubmitTier1PanAfrican(w http.ResponseWriter, r *http.Request) {
+	h.SubmitTier1(w, r)
 }
 
 type SubmitTier2Request struct {

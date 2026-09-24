@@ -10,6 +10,9 @@ export default function LoginLayout() {
       }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="pin" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="forgot-verify" />
+      <Stack.Screen name="forgot-reset" />
     </Stack>
   );
 }

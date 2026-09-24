@@ -41,7 +41,12 @@ func (h *Handler) GetWallets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wallets, err := h.walletSvc.GetUserWallets(r.Context(), claims.UserID, "Daniel Adekunle")
+	fallbackName := claims.Username
+	if fallbackName == "" {
+		fallbackName = "Chipa User"
+	}
+
+	wallets, err := h.walletSvc.GetUserWallets(r.Context(), claims.UserID, fallbackName)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -69,8 +74,13 @@ func (h *Handler) GetWalletByCurrency(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fallbackName := claims.Username
+	if fallbackName == "" {
+		fallbackName = "Chipa User"
+	}
+
 	currencyCode := strings.ToUpper(chi.URLParam(r, "currency"))
-	wallet, err := h.walletSvc.GetUserWallet(r.Context(), claims.UserID, domain.Currency(currencyCode), "Daniel Adekunle")
+	wallet, err := h.walletSvc.GetUserWallet(r.Context(), claims.UserID, domain.Currency(currencyCode), fallbackName)
 	if err != nil {
 		h.utils.RespondError(w, http.StatusNotFound, err.Error())
 		return

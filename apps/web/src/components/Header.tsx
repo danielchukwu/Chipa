@@ -1,17 +1,64 @@
-import LogoIcon from "@repo/ui/icons/logo-icon";
+import { Button } from "@repo/ui/components/button.tsx";
+import LogoIcon from "@repo/ui/icons/logo-icon.tsx";
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { cn } from "#/lib/utils";
 import { openWaitlist } from "../lib/waitlist";
+
+interface TabButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+	isActive: boolean;
+}
+
+function TabButton({
+	isActive,
+	children,
+	className,
+	...props
+}: TabButtonProps) {
+	return (
+		<button
+			type="button"
+			className={cn(
+				"px-3.5 h-full flex items-center justify-center rounded-full transition-all duration-200 cursor-pointer",
+				isActive
+					? "bg-[#18181B] text-white shadow-sm"
+					: "text-[#666666] hover:text-black",
+				className,
+			)}
+			{...props}
+		>
+			{children}
+		</button>
+	);
+}
 
 export default function Header() {
 	const [activeTab, setActiveTab] = useState<"personal" | "buisness">(
 		"personal",
 	);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const [isScrolled, setIsScrolled] = useState(false);
+
+	useEffect(() => {
+		const handleScroll = () => {
+			setIsScrolled(window.scrollY > 0);
+		};
+
+		handleScroll();
+		window.addEventListener("scroll", handleScroll, { passive: true });
+		return () => window.removeEventListener("scroll", handleScroll);
+	}, []);
 
 	return (
-		<header className="sticky top-0 z-40 bg-[#FCFAF7]/90 backdrop-blur-md border-b border-black/[0.04]">
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+		<header
+			className={cn(
+				"sticky top-0 z-40 transition-all duration-300 border-b",
+				isScrolled || mobileMenuOpen
+					? "bg-white/90 backdrop-blur-md border-black/[0.04]"
+					: "bg-white/0 backdrop-blur-none border-transparent",
+			)}
+		>
+			<div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between h-20">
 					{/* Left: Brand Logo & Persona Toggle */}
 					<div className="flex items-center gap-4 sm:gap-6">
@@ -23,63 +70,58 @@ export default function Header() {
 						</Link>
 
 						{/* Persona Switcher */}
-						<div className="hidden sm:inline-flex items-center bg-[#EFECE8] rounded-full p-1 text-xs font-semibold">
-							<button
-								type="button"
+						<div className="hidden h-11 sm:inline-flex items-center bg-black/5 rounded-full p-1 text-sm font-semibold">
+							<TabButton
+								isActive={activeTab === "personal"}
 								onClick={() => setActiveTab("personal")}
-								className={`px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-									activeTab === "personal"
-										? "bg-[#18181B] text-white shadow-sm"
-										: "text-[#666666] hover:text-black"
-								}`}
 							>
 								Personal
-							</button>
-							<button
-								type="button"
+							</TabButton>
+							<TabButton
+								isActive={activeTab === "buisness"}
 								onClick={() => setActiveTab("buisness")}
-								className={`px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer ${
-									activeTab === "buisness"
-										? "bg-[#18181B] text-white shadow-sm"
-										: "text-[#666666] hover:text-black"
-								}`}
 							>
 								Buisness
-							</button>
+							</TabButton>
 						</div>
 					</div>
 
 					{/* Center: Navigation Links */}
-					<nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#444444]">
-						<a href="#products" className="hover:text-black transition-colors">
-							Products
-						</a>
-						<a href="#company" className="hover:text-black transition-colors">
-							Company
-						</a>
-						<a href="#blog" className="hover:text-black transition-colors">
-							Blog
-						</a>
-						<a href="#support" className="hover:text-black transition-colors">
-							Support
-						</a>
-					</nav>
+					<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:block">
+						<nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#444444]">
+							<a
+								href="#products"
+								className="hover:text-black transition-colors"
+							>
+								Products
+							</a>
+							<a href="#company" className="hover:text-black transition-colors">
+								Company
+							</a>
+							<a href="#blog" className="hover:text-black transition-colors">
+								Blog
+							</a>
+							<a href="#support" className="hover:text-black transition-colors">
+								Support
+							</a>
+						</nav>
+					</div>
 
 					{/* Right: CTA & Mobile Toggle */}
 					<div className="flex items-center gap-3">
-						<button
-							type="button"
+						<Button
+							variant="black"
 							onClick={openWaitlist}
-							className="bg-[#18181B] hover:bg-black text-white text-xs sm:text-sm font-semibold px-4 sm:px-6 py-2.5 rounded-full transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-sm cursor-pointer"
+							className="hidden lg:inline-flex rounded-full text-xs sm:text-sm font-semibold px-4 sm:px-6 py-2.5 h-auto transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-sm"
 						>
 							Join the waitlist
-						</button>
+						</Button>
 
 						{/* Mobile Menu Button */}
 						<button
 							type="button"
 							onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-							className="md:hidden p-2 rounded-xl text-gray-700 hover:bg-black/5 transition"
+							className="lg:hidden p-2 rounded-xl text-gray-700 hover:bg-black/5 transition"
 							aria-label="Toggle Navigation"
 						>
 							<svg
@@ -110,30 +152,22 @@ export default function Header() {
 
 				{/* Mobile Dropdown Menu */}
 				{mobileMenuOpen && (
-					<div className="md:hidden py-4 border-t border-black/5 animate-in slide-in-from-top-2 duration-150">
+					<div className="hidden:hidden py-4 border-t border-black/5 animate-in slide-in-from-top-2 duration-150">
 						<div className="flex items-center justify-center mb-4 bg-[#EFECE8] rounded-full p-1 text-xs font-semibold max-w-xs mx-auto">
-							<button
-								type="button"
+							<TabButton
+								isActive={activeTab === "personal"}
 								onClick={() => setActiveTab("personal")}
-								className={`flex-1 py-1.5 rounded-full transition-all ${
-									activeTab === "personal"
-										? "bg-[#18181B] text-white shadow-sm"
-										: "text-[#666666]"
-								}`}
+								className="flex-1 py-1.5 h-auto text-xs"
 							>
 								Personal
-							</button>
-							<button
-								type="button"
+							</TabButton>
+							<TabButton
+								isActive={activeTab === "buisness"}
 								onClick={() => setActiveTab("buisness")}
-								className={`flex-1 py-1.5 rounded-full transition-all ${
-									activeTab === "buisness"
-										? "bg-[#18181B] text-white shadow-sm"
-										: "text-[#666666]"
-								}`}
+								className="flex-1 py-1.5 h-auto text-xs"
 							>
 								Buisness
-							</button>
+							</TabButton>
 						</div>
 
 						<div className="flex flex-col space-y-3 px-2 text-center text-sm font-medium text-gray-700">
@@ -165,6 +199,19 @@ export default function Header() {
 							>
 								Support
 							</button>
+						</div>
+
+						<div className="pt-3 px-2">
+							<Button
+								variant="black"
+								onClick={() => {
+									setMobileMenuOpen(false);
+									openWaitlist();
+								}}
+								className="w-full rounded-full text-sm font-semibold py-2.5 h-auto shadow-sm"
+							>
+								Join the waitlist
+							</Button>
 						</div>
 					</div>
 				)}

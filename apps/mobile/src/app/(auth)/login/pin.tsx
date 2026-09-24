@@ -94,7 +94,7 @@ export default function LoginPinScreen() {
               {/* Forgot PIN */}
               <Pressable
                 onPress={() => {
-                  /* TODO: forgot PIN flow */
+                  router.push('/(auth)/login/forgot-password' as any);
                 }}
                 hitSlop={10}
                 className="mt-1 mb-8"

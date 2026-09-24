@@ -1,5 +1,8 @@
-import LogoIcon from "@repo/ui/icons/logo-icon";
+import { Button } from "@repo/ui/components/button.tsx";
+import LogoIcon from "@repo/ui/icons/logo-icon.tsx";
+import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
+import { api } from "../../convex/_generated/api.js";
 
 interface WaitlistModalProps {
 	isOpen: boolean;
@@ -14,6 +17,9 @@ export default function WaitlistModal({
 	const [email, setEmail] = useState("");
 	const [submitted, setSubmitted] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	const joinWaitlist = useMutation(api.waitlist.join);
 
 	const isOpen = controlledIsOpen ?? internalIsOpen;
 	const onClose = controlledOnClose ?? (() => setInternalIsOpen(false));
@@ -42,19 +48,31 @@ export default function WaitlistModal({
 
 	if (!isOpen) return null;
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!email) return;
+		if (!email || loading) return;
 		setLoading(true);
-		setTimeout(() => {
-			setLoading(false);
+		setError(null);
+
+		try {
+			await joinWaitlist({ email });
 			setSubmitted(true);
-		}, 600);
+		} catch (err: unknown) {
+			console.error("Failed to join waitlist:", err);
+			setError(
+				err instanceof Error
+					? err.message
+					: "Failed to join waitlist. Please try again.",
+			);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	const handleReset = () => {
 		setSubmitted(false);
 		setEmail("");
+		setError(null);
 		onClose();
 	};
 
@@ -121,38 +139,18 @@ export default function WaitlistModal({
 								/>
 							</div>
 
-							<button
+							{error && (
+								<p className="text-xs text-red-500 font-medium px-2">{error}</p>
+							)}
+
+							<Button
 								type="submit"
-								disabled={loading}
-								className="w-full rounded-full bg-[#18181B] hover:bg-black text-white font-semibold py-3.5 px-6 text-sm sm:text-base transition-all duration-150 hover:shadow-lg disabled:opacity-70 flex items-center justify-center gap-2"
+								loading={loading}
+								variant="black"
+								className="w-full rounded-full font-semibold py-3.5 px-6 h-auto text-sm sm:text-base transition-all duration-150 hover:shadow-lg disabled:opacity-70"
 							>
-								{loading ? (
-									<>
-										<svg
-											className="animate-spin h-5 w-5 text-white"
-											fill="none"
-											viewBox="0 0 24 24"
-										>
-											<circle
-												className="opacity-25"
-												cx="12"
-												cy="12"
-												r="10"
-												stroke="currentColor"
-												strokeWidth="4"
-											/>
-											<path
-												className="opacity-75"
-												fill="currentColor"
-												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-											/>
-										</svg>
-										<span>Securing your spot...</span>
-									</>
-								) : (
-									<span>Claim Early Access</span>
-								)}
-							</button>
+								Claim Early Access
+							</Button>
 						</form>
 					</>
 				) : (
@@ -180,13 +178,13 @@ export default function WaitlistModal({
 							access details to{" "}
 							<span className="font-semibold text-gray-900">{email}</span> soon.
 						</p>
-						<button
+						<Button
 							onClick={handleReset}
-							type="button"
-							className="mt-6 inline-flex rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 px-6 py-2.5 text-sm font-semibold transition"
+							variant="grey"
+							className="mt-6 rounded-full px-6 py-2.5 h-auto text-sm font-semibold transition"
 						>
 							Done
-						</button>
+						</Button>
 					</div>
 				)}
 			</div>

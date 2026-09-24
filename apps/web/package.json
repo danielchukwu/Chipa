@@ -13,7 +13,8 @@
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "pnpm build && wrangler deploy",
+    "convex:dev": "convex dev",
     "start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "@tanstack/react-start": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "convex": "^1.46.0",
     "dotenv-cli": "^11.0.0",
     "lucide-react": "^0.577.0",
     "posthog-js": "^1.358.1",

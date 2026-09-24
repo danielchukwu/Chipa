@@ -7,6 +7,8 @@ import {
 } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
+import { useWallets } from "@/api/hooks/use-wallets";
+import { useAuth } from "@/context/auth-context";
 import { BackArrowIcon } from "@/components/ui/icons/back-arrow-icon";
 import { CopyIcon } from "@/components/ui/icons/copy-icon";
 import {
@@ -49,7 +51,7 @@ function AccountField({ label, value, onCopy }: AccountFieldProps) {
           numberOfLines={1}
           className="font-satoshi text-base font-bold text-gray-900"
         >
-          {value}
+          {value || "—"}
         </Text>
       </View>
       <Pressable
@@ -66,6 +68,8 @@ function AccountField({ label, value, onCopy }: AccountFieldProps) {
 export default function AddMoneyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { data: wallets } = useWallets();
   const params = useLocalSearchParams<{ currency?: string }>();
 
   // Initialize with passed currency or fallback to NGN
@@ -75,19 +79,49 @@ export default function AddMoneyScreen() {
     initialCurrency === "USD" ? "USD" : "NGN",
   );
 
+  const ngnWallet = wallets?.find((w) => w.currency === "NGN");
+  const usdWallet = wallets?.find((w) => w.currency === "USD");
+
+  const userName =
+    user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : "Chipa User";
+
+  const ngnAccountName = ngnWallet?.accountName || userName;
+  const ngnBankName = ngnWallet?.bankName || "Titan Trust Bank (Paystack)";
+  const ngnAccountNumber =
+    ngnWallet?.accountNumber || user?.accountNumber || "Generating...";
+  const ngnBalanceFormatted =
+    ngnWallet?.balance !== undefined
+      ? `₦${Number(ngnWallet.balance).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })}`
+      : "₦0.00";
+
+  const usdAccountName = usdWallet?.accountName || userName;
+  const usdBankName = usdWallet?.bankName || "Lead Bank (Bridge.xyz)";
+  const usdAccountNumber = usdWallet?.accountNumber || "Generating...";
+  const usdRoutingNumber = usdWallet?.routingNumber || "101019283";
+  const usdBalanceFormatted =
+    usdWallet?.balance !== undefined
+      ? `$${Number(usdWallet.balance).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        })}`
+      : "$0.00";
+
   const handleCopy = (label: string, text: string) => {
     Alert.alert("Copied!", `${label} copied to clipboard: ${text}`);
   };
 
   const handleCopyAll = () => {
     if (activeCurrency === "USD") {
-      const allText = `Daniel Chinonso Chukwu\nLead Bank\nAccount: 9031420494\nRouting: 9031420494\nType: Personal Checking`;
+      const allText = `${usdAccountName}\n${usdBankName}\nAccount: ${usdAccountNumber}\nRouting: ${usdRoutingNumber}\nType: Personal Checking`;
       Alert.alert(
         "Copied!",
         `All USD bank details copied to clipboard:\n\n${allText}`,
       );
     } else {
-      const allText = `Daniel Chinonso Chukwu\nPalmpay\nAccount: 9031420494`;
+      const allText = `${ngnAccountName}\n${ngnBankName}\nAccount: ${ngnAccountNumber}`;
       Alert.alert(
         "Copied!",
         `All NGN bank details copied to clipboard:\n\n${allText}`,
@@ -99,11 +133,11 @@ export default function AddMoneyScreen() {
     try {
       if (activeCurrency === "USD") {
         await Share.share({
-          message: `Chipa USD Account Details:\nName: Daniel Chinonso Chukwu\nBank: Lead Bank\nAccount Number: 9031420494\nRouting Number: 9031420494\nType: Personal Checking`,
+          message: `Chipa USD Account Details:\nName: ${usdAccountName}\nBank: ${usdBankName}\nAccount Number: ${usdAccountNumber}\nRouting Number: ${usdRoutingNumber}\nType: Personal Checking`,
         });
       } else {
         await Share.share({
-          message: `Chipa NGN Account Details:\nName: Daniel Chinonso Chukwu\nBank: Palmpay\nAccount Number: 9031420494`,
+          message: `Chipa NGN Account Details:\nName: ${ngnAccountName}\nBank: ${ngnBankName}\nAccount Number: ${ngnAccountNumber}`,
         });
       }
     } catch {
@@ -182,7 +216,7 @@ export default function AddMoneyScreen() {
 
           {/* Hero Balance */}
           <Text className="font-satoshi text-[32px] font-extrabold text-gray-900 tracking-tight my-1">
-            {activeCurrency === "USD" ? "$0.00" : "₦2,800.00"}
+            {activeCurrency === "USD" ? usdBalanceFormatted : ngnBalanceFormatted}
           </Text>
 
           {/* 4 Carousel Dots */}
@@ -232,25 +266,23 @@ export default function AddMoneyScreen() {
             <View className="gap-3 mb-6">
               <AccountField
                 label="Account name"
-                value="Daniel Chinonso Chukwu"
-                onCopy={() =>
-                  handleCopy("Account name", "Daniel Chinonso Chukwu")
-                }
+                value={usdAccountName}
+                onCopy={() => handleCopy("Account name", usdAccountName)}
               />
               <AccountField
                 label="Bank"
-                value="Lead Bank"
-                onCopy={() => handleCopy("Bank", "Lead Bank")}
+                value={usdBankName}
+                onCopy={() => handleCopy("Bank", usdBankName)}
               />
               <AccountField
                 label="Account number"
-                value="9031420494"
-                onCopy={() => handleCopy("Account number", "9031420494")}
+                value={usdAccountNumber}
+                onCopy={() => handleCopy("Account number", usdAccountNumber)}
               />
               <AccountField
                 label="Routing number"
-                value="9031420494"
-                onCopy={() => handleCopy("Routing number", "9031420494")}
+                value={usdRoutingNumber}
+                onCopy={() => handleCopy("Routing number", usdRoutingNumber)}
               />
               <AccountField
                 label="Account type"
@@ -278,20 +310,18 @@ export default function AddMoneyScreen() {
             <View className="gap-3 mb-6">
               <AccountField
                 label="Account name"
-                value="Daniel Chinonso Chukwu"
-                onCopy={() =>
-                  handleCopy("Account name", "Daniel Chinonso Chukwu")
-                }
+                value={ngnAccountName}
+                onCopy={() => handleCopy("Account name", ngnAccountName)}
               />
               <AccountField
                 label="Bank"
-                value="Palmpay"
-                onCopy={() => handleCopy("Bank", "Palmpay")}
+                value={ngnBankName}
+                onCopy={() => handleCopy("Bank", ngnBankName)}
               />
               <AccountField
                 label="Account number"
-                value="9031420494"
-                onCopy={() => handleCopy("Account number", "9031420494")}
+                value={ngnAccountNumber}
+                onCopy={() => handleCopy("Account number", ngnAccountNumber)}
               />
             </View>
 

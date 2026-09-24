@@ -1,4 +1,7 @@
+Started 11/09/2026
+
 Chipa
+- SEO and AI SEO
 
 - Option to use Visa and Mastercard
 - Create several cards
@@ -7,4 +10,11 @@ Chipa
 - Allow users to Freeze and Unfreeze cards
 - We will be using bridge.xyz for issueing USD, EUR, GBP accounts and stablecoin wallets.
 - We will be using paystack for local payments.
+- 
+
+
+GOALS
+Sep 23
+Ensure paystack DVA can be created successfully
+
 
