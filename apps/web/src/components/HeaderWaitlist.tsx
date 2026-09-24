@@ -30,14 +30,30 @@ export default function HeaderWaitlist() {
 		>
 			<div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between h-20">
-					{/* Left: Brand Logo & Persona Toggle */}
-					<div className="flex items-center gap-4 sm:gap-6">
+					{/* Left: Brand Logo */}
+					<div className="flex items-center gap-8">
 						<Link
 							to="/"
 							className="flex items-center transition-opacity hover:opacity-90"
 						>
 							<LogoIcon className="h-8 sm:h-9 w-auto" />
 						</Link>
+
+						{/* Desktop Nav */}
+						<nav className="hidden lg:flex items-center gap-7">
+							<Link
+								to="/"
+								className="text-sm font-semibold text-[#555555] hover:text-[#111111] transition-colors"
+							>
+								Home
+							</Link>
+							<Link
+								to="/about"
+								className="text-sm font-semibold text-[#555555] hover:text-[#111111] transition-colors"
+							>
+								About Us
+							</Link>
+						</nav>
 					</div>
 
 					{/* Right: CTA & Mobile Toggle */}
@@ -85,8 +101,24 @@ export default function HeaderWaitlist() {
 
 				{/* Mobile Dropdown Menu */}
 				{mobileMenuOpen && (
-					<div className="hidden:hidden py-4 border-t border-black/5 animate-in slide-in-from-top-2 duration-150">
-						<div className="pt-3 px-2">
+					<div className="lg:hidden py-4 border-t border-black/5 animate-in slide-in-from-top-2 duration-150 space-y-3">
+						<div className="flex flex-col space-y-1 px-2">
+							<Link
+								to="/"
+								onClick={() => setMobileMenuOpen(false)}
+								className="text-sm font-semibold text-gray-800 hover:text-black py-2 px-3 rounded-lg hover:bg-black/5 transition"
+							>
+								Home
+							</Link>
+							<Link
+								to="/about"
+								onClick={() => setMobileMenuOpen(false)}
+								className="text-sm font-semibold text-gray-800 hover:text-black py-2 px-3 rounded-lg hover:bg-black/5 transition"
+							>
+								About Us
+							</Link>
+						</div>
+						<div className="pt-2 px-2">
 							<Button
 								variant="black"
 								onClick={() => {
