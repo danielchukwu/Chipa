@@ -1,10 +1,5 @@
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@repo/ui/components/accordion.tsx";
 import { Button } from "@repo/ui/components/button.tsx";
+import FAQ from "#/components/FAQ";
 import TwinkleIcon from "@repo/ui/icons/landing-page/twinkle-icon.tsx";
 import VerifiedIcon from "@repo/ui/icons/landing-page/verified-icon.tsx";
 import { createFileRoute } from "@tanstack/react-router";
@@ -481,108 +476,7 @@ function LandingPage() {
 				</div>
 			</section>
 
-			{/* ========================================================================= */}
-			{/* 5. FREQUENTLY ASKED QUESTIONS (FAQ) SECTION                              */}
-			{/* ========================================================================= */}
-			<section className="page-container py-20 sm:py-28 lg:py-32">
-				<div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-					{/* Left: Section Headline */}
-					<div className="lg:col-span-5">
-						<h2 className="font-display font-black text-3xl sm:text-4xl lg:text-5xl text-[#111111] tracking-tight leading-tight sticky top-28">
-							Frequently Asked
-							<br />
-							Questions
-						</h2>
-					</div>
-
-					{/* Right: Shadcn Accordion */}
-					<div className="lg:col-span-7">
-						<Accordion
-							type="single"
-							collapsible
-							defaultValue="faq-0"
-							className="w-full"
-						>
-							<AccordionItem
-								value="faq-0"
-								className="border-b border-black/[0.08]"
-							>
-								<AccordionTrigger className="text-left font-bold text-base sm:text-lg text-[#111111] py-5 hover:no-underline cursor-pointer">
-									Is Chipa a bank?
-								</AccordionTrigger>
-								<AccordionContent className="text-sm sm:text-base text-[#555555] leading-relaxed pb-6 pt-1">
-									Raenest is a Financial Technology (FinTech) Company, not a
-									Bank. Banking services are provided by Regent Bank, Member
-									FDIC. Raenest is not FDIC insured. FDIC deposit insurance up
-									to $250,000 per qualified customer account on a "pass-through"
-									basis, for which certain conditions must be satisfied. FDIC
-									insurance only covers the failure of Regent Bank, Member FDIC.
-									Card services are provided by Raenest's technology partners,
-									authorized by Visa and Mastercard to issue cards operating
-									over their networks.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem
-								value="faq-1"
-								className="border-b border-black/[0.08]"
-							>
-								<AccordionTrigger className="text-left font-bold text-base sm:text-lg text-[#111111] py-5 hover:no-underline cursor-pointer">
-									How can I receive money?
-								</AccordionTrigger>
-								<AccordionContent className="text-sm sm:text-base text-[#555555] leading-relaxed pb-6 pt-1">
-									You can receive money locally via bank transfer directly to
-									your dedicated virtual account numbers, or internationally in
-									USD, EUR, and GBP through ACH, Wire, SEPA, and Faster
-									Payments. Funds settle automatically into your Chipa
-									multi-currency wallet.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem
-								value="faq-2"
-								className="border-b border-black/[0.08]"
-							>
-								<AccordionTrigger className="text-left font-bold text-base sm:text-lg text-[#111111] py-5 hover:no-underline cursor-pointer">
-									Is there a fee for opening a USD, GBP and EUR account?
-								</AccordionTrigger>
-								<AccordionContent className="text-sm sm:text-base text-[#555555] leading-relaxed pb-6 pt-1">
-									Opening an account with Chipa is completely free. There are no
-									hidden monthly maintenance fees or recurring charges.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem
-								value="faq-3"
-								className="border-b border-black/[0.08]"
-							>
-								<AccordionTrigger className="text-left font-bold text-base sm:text-lg text-[#111111] py-5 hover:no-underline cursor-pointer">
-									How long does it take to get my bank account?
-								</AccordionTrigger>
-								<AccordionContent className="text-sm sm:text-base text-[#555555] leading-relaxed pb-6 pt-1">
-									Once your identity verification (KYC) documents are approved,
-									your foreign and local virtual bank accounts are typically
-									generated and ready for use within minutes.
-								</AccordionContent>
-							</AccordionItem>
-
-							<AccordionItem
-								value="faq-4"
-								className="border-b border-black/[0.08]"
-							>
-								<AccordionTrigger className="text-left font-bold text-base sm:text-lg text-[#111111] py-5 hover:no-underline cursor-pointer">
-									Can I use my USD account on Upwork, Deel, Fiverr, or Payoneer?
-								</AccordionTrigger>
-								<AccordionContent className="text-sm sm:text-base text-[#555555] leading-relaxed pb-6 pt-1">
-									Yes! Your Chipa USD account details work seamlessly with
-									global freelance and payroll platforms including Upwork, Deel,
-									Fiverr, Remote, and Payoneer for direct withdrawals.
-								</AccordionContent>
-							</AccordionItem>
-						</Accordion>
-					</div>
-				</div>
-			</section>
+			<FAQ />
 		</main>
 	);
 }
