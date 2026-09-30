@@ -160,8 +160,8 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	mainRouter.Use(apimiddleware.PrometheusMiddleware)
 	mainRouter.Use(middleware.Recoverer)
 
-	// Swagger documentation (Dev only)
-	if os.Getenv("ENV") != "production" {
+	// Swagger documentation (enabled in dev by default, or when ENABLE_SWAGGER=true is set)
+	if os.Getenv("ENV") != "production" || os.Getenv("ENABLE_SWAGGER") == "true" {
 		mainRouter.Get("/api/v1/swagger/*", httpSwagger.Handler(
 			httpSwagger.URL("/api/v1/swagger/doc.json"),
 		))
