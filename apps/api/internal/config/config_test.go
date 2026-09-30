@@ -70,21 +70,13 @@ func TestGetEnvPath(t *testing.T) {
 
 func TestLoadConfig(t *testing.T) {
 	// Set required environment variables
-	os.Setenv("DB_USER", "testuser")
-	os.Setenv("DB_PASSWORD", "testpass")
-	os.Setenv("DB_NAME", "testdb")
-	os.Setenv("DB_PORT", "5432")
-	os.Setenv("REDIS_ADDR", "localhost")
-	os.Setenv("REDIS_PORT", "6379")
+	os.Setenv("DATABASE_URL", "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable")
+	os.Setenv("REDIS_URL", "redis://:testpass@localhost:6379/0")
 	os.Setenv("IS_CI_CD", "true") // Skip .env loading
 
 	defer func() {
-		os.Unsetenv("DB_USER")
-		os.Unsetenv("DB_PASSWORD")
-		os.Unsetenv("DB_NAME")
-		os.Unsetenv("DB_PORT")
-		os.Unsetenv("REDIS_ADDR")
-		os.Unsetenv("REDIS_PORT")
+		os.Unsetenv("DATABASE_URL")
+		os.Unsetenv("REDIS_URL")
 		os.Unsetenv("IS_CI_CD")
 	}()
 
@@ -96,15 +88,15 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfig_Error(t *testing.T) {
-	// Clear one required variable
-	os.Unsetenv("DB_USER")
+	// Clear required DATABASE_URL
+	os.Unsetenv("DATABASE_URL")
 	os.Setenv("IS_CI_CD", "true")
 	defer os.Unsetenv("IS_CI_CD")
 
 	cfg, err := config.LoadConfig()
 	assert.Error(t, err)
 	assert.Nil(t, cfg)
-	assert.Contains(t, err.Error(), "must be set")
+	assert.Contains(t, err.Error(), "DATABASE_URL must be set")
 }
 func TestLoad(t *testing.T) {
 	cfg := config.Load()
@@ -119,20 +111,14 @@ func TestLoad_Singleton(t *testing.T) {
 
 func TestLoadConfig_Testing(t *testing.T) {
 	// Set required environment variables
-	os.Setenv("DB_USER", "testuser")
-	os.Setenv("DB_PASSWORD", "testpass")
-	os.Setenv("DB_NAME", "testdb")
-	os.Setenv("DB_PORT", "5432")
+	os.Setenv("DATABASE_URL", "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable")
 	os.Setenv("REDIS_ADDR", "localhost")
 	os.Setenv("REDIS_PORT", "6379")
 	os.Setenv("IS_CI_CD", "true")
 	os.Setenv("IS_TESTING", "true")
 
 	defer func() {
-		os.Unsetenv("DB_USER")
-		os.Unsetenv("DB_PASSWORD")
-		os.Unsetenv("DB_NAME")
-		os.Unsetenv("DB_PORT")
+		os.Unsetenv("DATABASE_URL")
 		os.Unsetenv("REDIS_ADDR")
 		os.Unsetenv("REDIS_PORT")
 		os.Unsetenv("IS_CI_CD")

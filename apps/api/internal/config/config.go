@@ -139,62 +139,30 @@ func LoadConfig() (*Config, error) {
 
 	is_testing := GetEnv("IS_TESTING", "false")
 
-	// Support direct DATABASE_URL (standard for Railway, Heroku, etc.)
+	// DATABASE_URL is the standard connection string
 	db_url := GetEnv("DATABASE_URL", "")
 	if db_url == "" {
-		db_host := GetEnv("DB_HOST", GetEnv("PGHOST", "localhost"))
-		db_user := GetEnv("DB_USER", GetEnv("PGUSER", ""))
-		db_pass := GetEnv("DB_PASSWORD", GetEnv("PGPASSWORD", ""))
-		db_name := GetEnv("DB_NAME", GetEnv("PGDATABASE", ""))
-		db_port := GetEnv("DB_PORT", GetEnv("PGPORT", ""))
-		db_sslmode := GetEnv("DB_SSLMODE", "disable")
-
-		if db_name == "" || db_user == "" || db_pass == "" || db_port == "" {
-			return nil, fmt.Errorf("DATABASE_URL or (DB_NAME, DB_USER, DB_PASSWORD, DB_PORT) must be set")
-		}
-
-		// if testing, setup test containers for postgres and redis
-		if is_testing == "true" {
-			testDbConfig, _, err := utils.SetupPostgresTestContainer(db_user, db_pass, db_name, db_port)
-			if err != nil {
-				return nil, fmt.Errorf("failed to setup postgres test container: %w", err)
-			}
-			db_port = testDbConfig.Port
-		}
-
-		db_url = utils.FormatPostgresDSN(db_user, db_pass, db_host, db_port, db_name, db_sslmode)
+		return nil, fmt.Errorf("DATABASE_URL must be set in environment")
 	}
 
-	// Support direct REDIS_URL or REDIS_ADDR/REDISHOST
+	// Redis connection configuration (requires REDIS_URL)
 	redis_url := GetEnv("REDIS_URL", "")
-	redis_addr := GetEnv("REDIS_ADDR", "")
-	redis_port := GetEnv("REDIS_PORT", "")
-	redis_password := GetEnv("REDIS_PASSWORD", "")
-	redis_db := GetIntEnv("REDIS_DB", 0)
-
-	if redis_url != "" {
-		if opt, err := redis.ParseURL(redis_url); err == nil {
-			redis_addr = opt.Addr
-			redis_password = opt.Password
-			redis_db = opt.DB
-		}
-	} else if redis_addr == "" && os.Getenv("REDISHOST") != "" {
-		redis_addr = fmt.Sprintf("%s:%s", os.Getenv("REDISHOST"), GetEnv("REDISPORT", "6379"))
-		redis_password = GetEnv("REDISPASSWORD", "")
-	} else if redis_addr != "" && !strings.Contains(redis_addr, ":") && redis_port != "" {
-		redis_addr = fmt.Sprintf("%s:%s", redis_addr, redis_port)
+	if redis_url == "" {
+		return nil, fmt.Errorf("REDIS_URL must be set in environment")
 	}
 
-	if is_testing == "true" && redis_port != "" {
+	redisOptions, err := redis.ParseURL(redis_url)
+	if err != nil {
+		return nil, fmt.Errorf("invalid REDIS_URL format: %w", err)
+	}
+
+	if is_testing == "true" {
+		redis_port := GetEnv("REDIS_PORT", "6379")
 		testRedisAddr, _, err := utils.SetupRedisTestContainer(redis_port)
 		if err != nil {
 			return nil, fmt.Errorf("failed to setup redis test container: %w", err)
 		}
-		redis_addr = testRedisAddr
-	}
-
-	if redis_addr == "" {
-		return nil, fmt.Errorf("REDIS_URL, REDIS_ADDR, or REDISHOST must be set")
+		redisOptions.Addr = testRedisAddr
 	}
 
 	// jwt secret and expirations
@@ -219,9 +187,9 @@ func LoadConfig() (*Config, error) {
 			URL: db_url,
 		},
 		Redis: RedisConfig{
-			Addr:     redis_addr,
-			Password: redis_password,
-			DB:       redis_db,
+			Addr:     redisOptions.Addr,
+			Password: redisOptions.Password,
+			DB:       redisOptions.DB,
 		},
 		R2: R2Config{
 			AccountID:       GetEnv("R2_ACCOUNT_ID", ""),

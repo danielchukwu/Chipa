@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
     networks:
       - chipa_network
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    command: ["redis-server", "--requirepass", "password"]
 
   postgres:
     container_name: postgres
