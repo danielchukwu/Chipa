@@ -55,23 +55,25 @@ type BridgeConfig struct {
 	BaseURL string
 }
 
-// PaystackConfig holds API credentials for Paystack NGN virtual accounts & verification.
-type PaystackConfig struct {
-	SecretKey string
-	PublicKey string
-	BaseURL   string
+// FlutterwaveConfig holds API credentials for Flutterwave NGN virtual accounts & verification.
+type FlutterwaveConfig struct {
+	SecretKey     string
+	PublicKey     string
+	EncryptionKey string
+	SecretHash    string
+	BaseURL       string
 }
 
 // Config holds the complete application configuration.
 // It includes environment settings, server port, and database configuration.
 type Config struct {
-	Env                  string         // Application environment (development, staging, production)
-	Port                 string         // Server port for HTTP listener
-	Database             DatabaseConfig // Database connection configuration
-	Redis                RedisConfig    // Redis connection configuration
-	R2                   R2Config       // Cloudflare R2 storage configuration
-	Bridge               BridgeConfig   // Bridge.xyz BaaS configuration
-	Paystack             PaystackConfig // Paystack NGN banking configuration
+	Env                  string            // Application environment (development, staging, production)
+	Port                 string            // Server port for HTTP listener
+	Database             DatabaseConfig    // Database connection configuration
+	Redis                RedisConfig       // Redis connection configuration
+	R2                   R2Config          // Cloudflare R2 storage configuration
+	Bridge               BridgeConfig      // Bridge.xyz BaaS configuration
+	Flutterwave          FlutterwaveConfig // Flutterwave NGN banking configuration
 	GeminiAPIKey         string
 	JWTSecret            string
 	JWTAccessExpiration  time.Duration
@@ -234,10 +236,12 @@ func LoadConfig() (*Config, error) {
 			APIKey:  GetEnv("BRIDGE_API_KEY", ""),
 			BaseURL: GetEnv("BRIDGE_BASE_URL", "https://api.bridge.xyz/v0"),
 		},
-		Paystack: PaystackConfig{
-			SecretKey: GetEnv("PAYSTACK_SECRET_KEY", ""),
-			PublicKey: GetEnv("PAYSTACK_PUBLIC_KEY", ""),
-			BaseURL:   GetEnv("PAYSTACK_BASE_URL", "https://api.paystack.co"),
+		Flutterwave: FlutterwaveConfig{
+			SecretKey:     GetEnv("FLUTTERWAVE_SECRET_KEY", ""),
+			PublicKey:     GetEnv("FLUTTERWAVE_PUBLIC_KEY", ""),
+			EncryptionKey: GetEnv("FLUTTERWAVE_ENCRYPTION_KEY", ""),
+			SecretHash:    GetEnv("FLUTTERWAVE_SECRET_HASH", ""),
+			BaseURL:       GetEnv("FLUTTERWAVE_BASE_URL", "https://api.flutterwave.com/v3"),
 		},
 		GeminiAPIKey:         GetEnv("GEMINI_API_KEY", ""),
 		JWTSecret:            jwtSecret,

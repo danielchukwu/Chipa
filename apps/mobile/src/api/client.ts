@@ -9,18 +9,18 @@ import { parseApiError } from './errors';
 // ---------------------------------------------------------------------------
 
 export const getApiBaseUrl = (): string => {
-  // 1. If explicitly configured with a non-localhost URL (or if on web), respect it
-  const envUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
-  if (envUrl && (!envUrl.includes('localhost') || Platform.OS === 'web')) {
-    return envUrl;
-  }
-
-  // 2. Web browser: connect to same host as window, or localhost
+  // 1. Web browser: connect to same host as window, or localhost
   if (Platform.OS === 'web') {
     if (typeof window !== 'undefined' && window.location?.hostname) {
       return `${window.location.protocol}//${window.location.hostname}:4100`;
     }
-    return envUrl || 'http://localhost:4100';
+    return process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '') || 'http://localhost:4100';
+  }
+
+  // 2. Explicit HTTPS / remote production or tunnel URL
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
+  if (envUrl && (envUrl.startsWith('https://') || !envUrl.match(/localhost|127\.0\.0\.1|192\.168\.|10\.|172\./))) {
+    return envUrl;
   }
 
   // 3. Physical devices running Expo Go or development client (iOS / Android)
@@ -37,7 +37,7 @@ export const getApiBaseUrl = (): string => {
     }
   }
 
-  // Fallback for linkingUri (e.g. "exp://192.168.1.12:8081")
+  // Fallback for linkingUri (e.g. "exp://192.168.1.5:8081")
   if (Constants.linkingUri) {
     const match = Constants.linkingUri.match(/^[a-zA-Z]+:\/\/([^:/]+)/);
     if (match && match[1] && match[1] !== 'localhost' && match[1] !== '127.0.0.1') {
@@ -50,7 +50,12 @@ export const getApiBaseUrl = (): string => {
     return 'http://10.0.2.2:4100';
   }
 
-  // 5. iOS simulator fallback
+  // 5. Explicit local envUrl if configured
+  if (envUrl && !envUrl.includes('localhost')) {
+    return envUrl;
+  }
+
+  // 6. iOS simulator / localhost fallback
   return envUrl || 'http://localhost:4100';
 };
 
@@ -133,7 +138,7 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Dynamically ensure fresh baseURL for physical devices
     const currentBaseUrl = getApiBaseUrl();
-    if (currentBaseUrl && (!config.baseURL || config.baseURL === 'http://localhost:4100')) {
+    if (currentBaseUrl) {
       config.baseURL = currentBaseUrl;
     }
 
@@ -226,7 +231,7 @@ apiClient.interceptors.response.use(
           refreshToken?: string;
           user?: any;
         };
-      }>(`${API_BASE_URL}/api/v1/auth/refresh`, {
+      }>(`${getApiBaseUrl()}/api/v1/auth/refresh`, {
         refreshToken,
       });
 

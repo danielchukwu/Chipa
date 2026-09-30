@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,6 +64,10 @@ func TestTestNewApp_Integration(t *testing.T) {
 		return
 	}
 	defer AfterEach(t)
+
+	if cfg.Database.URL == "" || strings.Contains(cfg.Database.URL, "localhost:/") {
+		cfg.Database.URL = "postgres://postgres:password@localhost:5436/chipa_db?sslmode=disable"
+	}
 
 	app := TestNewApp(t, ctx, cfg)
 	require.NotNil(t, app)

@@ -9,7 +9,7 @@ import (
 	"chipa/api/internal/db"
 	"chipa/api/internal/db/queries"
 	"chipa/api/internal/domain"
-	paystackprovider "chipa/api/internal/provider/paystack"
+	flutterwaveprovider "chipa/api/internal/provider/flutterwave"
 	"math/big"
 	"strings"
 	"sync"
@@ -23,9 +23,9 @@ import (
 
 // UsersService provides operations for managing user data, roles, and related services.
 type UsersService struct {
-	queries        *queries.Queries
-	rdb            *redis.Client
-	paystackClient *paystackprovider.PaystackClient
+	queries           *queries.Queries
+	rdb               *redis.Client
+	flutterwaveClient *flutterwaveprovider.FlutterwaveClient
 }
 
 // CachedReferralCodeInfo represents the cached referrer details stored in Redis.
@@ -35,28 +35,28 @@ type CachedReferralCodeInfo struct {
 }
 
 // NewUsersService initializes and returns a new UsersService.
-func NewUsersService(q *queries.Queries, rdb *redis.Client, paystackClient *paystackprovider.PaystackClient) *UsersService {
+func NewUsersService(q *queries.Queries, rdb *redis.Client, flutterwaveClient *flutterwaveprovider.FlutterwaveClient) *UsersService {
 	return &UsersService{
-		queries:        q,
-		rdb:            rdb,
-		paystackClient: paystackClient,
+		queries:           q,
+		rdb:               rdb,
+		flutterwaveClient: flutterwaveClient,
 	}
 }
 
-// GetBanks retrieves a list of available banks via Paystack.
+// GetBanks retrieves a list of available banks via Flutterwave.
 func (s *UsersService) GetBanks(ctx context.Context) ([]domain.Bank, error) {
-	if s.paystackClient == nil {
-		return nil, fmt.Errorf("paystack client is not configured")
+	if s.flutterwaveClient == nil {
+		return nil, fmt.Errorf("flutterwave client is not configured")
 	}
-	return s.paystackClient.GetBanks(ctx)
+	return s.flutterwaveClient.GetBanks(ctx)
 }
 
-// ValidateBankAccount checks if a given account number and bank code are valid via Paystack.
+// ValidateBankAccount checks if a given account number and bank code are valid via Flutterwave.
 func (s *UsersService) ValidateBankAccount(ctx context.Context, accountNumber string, bankCode string) (string, error) {
-	if s.paystackClient == nil {
-		return "", fmt.Errorf("paystack client is not configured")
+	if s.flutterwaveClient == nil {
+		return "", fmt.Errorf("flutterwave client is not configured")
 	}
-	return s.paystackClient.ValidateBankAccount(ctx, accountNumber, bankCode)
+	return s.flutterwaveClient.ValidateBankAccount(ctx, accountNumber, bankCode)
 }
 
 // GetUserByPublicID retrieves a user's details including their location names (Country, State, City).

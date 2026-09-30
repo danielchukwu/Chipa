@@ -3,6 +3,7 @@ package fintech
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"strings"
 	"sync"
@@ -11,17 +12,18 @@ import (
 	"chipa/api/internal/crypto"
 	"chipa/api/internal/domain"
 	"chipa/api/internal/provider/bridge"
-	"chipa/api/internal/provider/paystack"
+	"chipa/api/internal/provider/flutterwave"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type WalletService struct {
-	mu             sync.RWMutex
-	pool           *pgxpool.Pool
-	bridgeClient   *bridge.BridgeClient
-	paystackClient *paystack.PaystackClient
-	ledgerSvc      *LedgerService
+	mu                sync.RWMutex
+	pool              *pgxpool.Pool
+	bridgeClient      *bridge.BridgeClient
+	flutterwaveClient *flutterwave.FlutterwaveClient
+	ledgerSvc         *LedgerService
+	vault             *crypto.Vault
 	// in-memory store for fallback / tests without db
 	userAccounts   map[int64]map[domain.Currency]*domain.VirtualAccount
 }
@@ -29,15 +31,23 @@ type WalletService struct {
 func NewWalletService(
 	pool *pgxpool.Pool,
 	bridgeClient *bridge.BridgeClient,
-	paystackClient *paystack.PaystackClient,
+	flutterwaveClient *flutterwave.FlutterwaveClient,
 	ledgerSvc *LedgerService,
+	vault ...*crypto.Vault,
 ) *WalletService {
+	var v *crypto.Vault
+	if len(vault) > 0 && vault[0] != nil {
+		v = vault[0]
+	} else {
+		v = crypto.NewVault()
+	}
 	return &WalletService{
-		pool:           pool,
-		bridgeClient:   bridgeClient,
-		paystackClient: paystackClient,
-		ledgerSvc:      ledgerSvc,
-		userAccounts:  make(map[int64]map[domain.Currency]*domain.VirtualAccount),
+		pool:              pool,
+		bridgeClient:      bridgeClient,
+		flutterwaveClient: flutterwaveClient,
+		ledgerSvc:         ledgerSvc,
+		vault:             v,
+		userAccounts:      make(map[int64]map[domain.Currency]*domain.VirtualAccount),
 	}
 }
 
@@ -108,13 +118,15 @@ func (s *WalletService) ensureAccounts(ctx context.Context, userID int64, fallba
 
 	accs := make(map[domain.Currency]*domain.VirtualAccount)
 
-	// 1. NGN (Paystack)
-	if s.paystackClient != nil {
-		ngnAcc, _ := s.paystackClient.ProvisionNGNAccount(ctx, userID, fallbackName)
-		ngnAcc.BalanceMinor = 0
-		ngnAcc.Balance = 0.00
-		accs[domain.CurrencyNGN] = ngnAcc
-	} else {
+	// 1. NGN (Flutterwave)
+	if s.flutterwaveClient != nil {
+		if ngnAcc, err := s.flutterwaveClient.ProvisionNGNAccount(ctx, userID, fallbackName); err == nil && ngnAcc != nil {
+			ngnAcc.BalanceMinor = 0
+			ngnAcc.Balance = 0.00
+			accs[domain.CurrencyNGN] = ngnAcc
+		}
+	}
+	if _, ok := accs[domain.CurrencyNGN]; !ok {
 		accs[domain.CurrencyNGN] = &domain.VirtualAccount{
 			ID:           fmt.Sprintf("va-ngn-%d", userID),
 			UserID:       userID,
@@ -123,35 +135,52 @@ func (s *WalletService) ensureAccounts(ctx context.Context, userID int64, fallba
 			Symbol:       "₦",
 			BalanceMinor: 0,
 			Balance:      0.00,
-			AccountName:  fmt.Sprintf("CHIPA / %s", fallbackName),
-			AccountNumber: fmt.Sprintf("829%07d", userID*1000+19),
-			BankName:     "Titan Trust Bank (Paystack)",
-			Provider:     "paystack",
-			Status:       "active",
+			AccountName:  fallbackName,
+			Status:       "unprovisioned",
 			CreatedAt:    time.Now(),
 			UpdatedAt:    time.Now(),
 		}
 	}
 
-	// 2. USD (Bridge.xyz)
+	// 2. USD, GBP, EUR (Bridge.xyz)
 	if s.bridgeClient != nil {
-		usdAcc, _ := s.bridgeClient.ProvisionUSDAccount(ctx, userID, fallbackName)
-		usdAcc.BalanceMinor = 0
-		usdAcc.Balance = 0.00
-		usdAcc.Provider = "bridge"
-		accs[domain.CurrencyUSD] = usdAcc
+		if usdAcc, err := s.bridgeClient.ProvisionUSDAccount(ctx, userID, fallbackName); err == nil && usdAcc != nil && usdAcc.AccountNumber != "" {
+			usdAcc.BalanceMinor = 0
+			usdAcc.Balance = 0.00
+			usdAcc.Provider = "bridge"
+			accs[domain.CurrencyUSD] = usdAcc
+		}
+		if gbpAcc, err := s.bridgeClient.ProvisionGBPAccount(ctx, userID, fallbackName); err == nil && gbpAcc != nil && gbpAcc.AccountNumber != "" {
+			gbpAcc.BalanceMinor = 0
+			gbpAcc.Balance = 0.00
+			gbpAcc.Provider = "bridge"
+			accs[domain.CurrencyGBP] = gbpAcc
+		}
+		if eurAcc, err := s.bridgeClient.ProvisionEURAccount(ctx, userID, fallbackName); err == nil && eurAcc != nil && eurAcc.AccountNumber != "" {
+			eurAcc.BalanceMinor = 0
+			eurAcc.Balance = 0.00
+			eurAcc.Provider = "bridge"
+			accs[domain.CurrencyEUR] = eurAcc
+		}
+	}
 
-		gbpAcc, _ := s.bridgeClient.ProvisionGBPAccount(ctx, userID, fallbackName)
-		gbpAcc.BalanceMinor = 0
-		gbpAcc.Balance = 0.00
-		gbpAcc.Provider = "bridge"
-		accs[domain.CurrencyGBP] = gbpAcc
-
-		eurAcc, _ := s.bridgeClient.ProvisionEURAccount(ctx, userID, fallbackName)
-		eurAcc.BalanceMinor = 0
-		eurAcc.Balance = 0.00
-		eurAcc.Provider = "bridge"
-		accs[domain.CurrencyEUR] = eurAcc
+	for _, curr := range []domain.Currency{domain.CurrencyUSD, domain.CurrencyGBP, domain.CurrencyEUR} {
+		if _, ok := accs[curr]; !ok {
+			cName, symbol := getCurrencyMeta(curr)
+			accs[curr] = &domain.VirtualAccount{
+				ID:           fmt.Sprintf("va-%s-%d", strings.ToLower(string(curr)), userID),
+				UserID:       userID,
+				Currency:     curr,
+				CurrencyName: cName,
+				Symbol:       symbol,
+				BalanceMinor: 0,
+				Balance:      0.00,
+				AccountName:  fallbackName,
+				Status:       "unprovisioned",
+				CreatedAt:    time.Now(),
+				UpdatedAt:    time.Now(),
+			}
+		}
 	}
 
 	s.userAccounts[userID] = accs
@@ -241,14 +270,34 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 
 	holderName := strings.TrimSpace(fmt.Sprintf("%s %s", firstName, lastName))
 	if holderName == "" {
-		if fallbackName != "" {
+		if fallbackName != "" && !isDigits(fallbackName) {
 			holderName = fallbackName
 		} else {
 			holderName = "Chipa User"
 		}
 	}
 
-	// 2. Prepare accounts for NGN, USD, GBP, EUR
+	// 2. Resolve BVN from fallbackName (if 11 digits) or query & decrypt from identity_documents
+	var bvnOpt string
+	if len(strings.TrimSpace(fallbackName)) == 11 && isDigits(strings.TrimSpace(fallbackName)) {
+		bvnOpt = strings.TrimSpace(fallbackName)
+	}
+	if bvnOpt == "" && s.pool != nil && s.vault != nil {
+		var encBVN []byte
+		_ = s.pool.QueryRow(ctx, `
+			SELECT document_number_encrypted 
+			FROM identity_documents 
+			WHERE user_id = $1 AND document_type = 'bvn' AND document_number_encrypted IS NOT NULL
+			ORDER BY created_at DESC LIMIT 1
+		`, userID).Scan(&encBVN)
+		if len(encBVN) > 0 {
+			if dec, err := s.vault.Decrypt(encBVN); err == nil && len(dec) == 11 {
+				bvnOpt = dec
+			}
+		}
+	}
+
+	// 3. Prepare accounts for NGN, USD, GBP, EUR
 	type provisionItem struct {
 		Currency     domain.Currency
 		InitialMinor int64
@@ -256,19 +305,19 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 	}
 
 	var ngnVA *domain.VirtualAccount
-	if s.paystackClient != nil {
-		ngnVA, _ = s.paystackClient.ProvisionNGNAccount(ctx, userID, holderName, email)
-	}
-	if ngnVA == nil {
-		ngnVA = &domain.VirtualAccount{
-			Currency:      domain.CurrencyNGN,
-			AccountName:   fmt.Sprintf("CHIPA / %s", holderName),
-			AccountNumber: fmt.Sprintf("992%07d", userID*1000+19),
-			BankName:      "Titan Trust Bank (Paystack)",
-			Provider:      "paystack",
+	if s.flutterwaveClient != nil {
+		var err error
+		if bvnOpt != "" {
+			ngnVA, err = s.flutterwaveClient.ProvisionNGNAccount(ctx, userID, holderName, email, bvnOpt, phone)
+		} else {
+			ngnVA, err = s.flutterwaveClient.ProvisionNGNAccount(ctx, userID, holderName, email, phone)
 		}
-	} else {
-		ngnVA.Provider = "paystack"
+		if err != nil {
+			slog.Error("[WalletService] NGN DVA provisioning failed", "user_id", userID, "error", err)
+		}
+	}
+	if ngnVA != nil {
+		ngnVA.Provider = "flutterwave"
 	}
 
 	var usdVA, gbpVA, eurVA *domain.VirtualAccount
@@ -277,43 +326,13 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 		gbpVA, _ = s.bridgeClient.ProvisionGBPAccount(ctx, userID, holderName)
 		eurVA, _ = s.bridgeClient.ProvisionEURAccount(ctx, userID, holderName)
 	}
-	if usdVA == nil {
-		usdVA = &domain.VirtualAccount{
-			Currency:      domain.CurrencyUSD,
-			AccountName:   holderName,
-			AccountNumber: fmt.Sprintf("409%09d", userID*1000+77),
-			BankName:      "Lead Bank (Bridge.xyz BaaS)",
-			RoutingNumber: "101019283",
-			Provider:      "bridge",
-		}
-	} else {
+	if usdVA != nil {
 		usdVA.Provider = "bridge"
 	}
-
-	if gbpVA == nil {
-		gbpVA = &domain.VirtualAccount{
-			Currency:      domain.CurrencyGBP,
-			AccountName:   holderName,
-			AccountNumber: fmt.Sprintf("%08d", userID*1000+45),
-			BankName:      "Faster Payments UK (Bridge.xyz)",
-			SortCode:      "04-00-04",
-			Provider:      "bridge",
-		}
-	} else {
+	if gbpVA != nil {
 		gbpVA.Provider = "bridge"
 	}
-
-	if eurVA == nil {
-		eurVA = &domain.VirtualAccount{
-			Currency:      domain.CurrencyEUR,
-			AccountName:   holderName,
-			AccountNumber: fmt.Sprintf("LT483019%012d", userID*1000+63),
-			BankName:      "SEPA Banking (Bridge.xyz)",
-			IBAN:          fmt.Sprintf("LT483019%012d", userID*1000+63),
-			BIC:           "CLJUGB21",
-			Provider:      "bridge",
-		}
-	} else {
+	if eurVA != nil {
 		eurVA.Provider = "bridge"
 	}
 
@@ -325,7 +344,7 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 	}
 
 	for _, item := range items {
-		// 1. Locate existing financial account for this user and currency, or insert a new one
+		// 1. Locate existing financial account for this user and currency, or insert a new balance anchor
 		var faID string
 		err := s.pool.QueryRow(ctx, `
 			SELECT id::text FROM financial_accounts 
@@ -356,25 +375,30 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 			`, faID, item.InitialMinor)
 		}
 
-		// 2. Check if payment_account already exists for this financial_account_id
+		// 2. ONLY insert or update payment_account if provider returned a real virtual account number!
+		if item.VA == nil || strings.TrimSpace(item.VA.AccountNumber) == "" {
+			continue
+		}
+
 		var paID string
 		_ = s.pool.QueryRow(ctx, `SELECT id::text FROM payment_accounts WHERE financial_account_id = $1::uuid LIMIT 1`, faID).Scan(&paID)
 
 		if paID == "" {
 			_, _ = s.pool.Exec(ctx, `
 				INSERT INTO payment_accounts (
-					financial_account_id, user_id, provider, account_name, account_number,
+					financial_account_id, user_id, provider, provider_account_id, account_name, account_number,
 					bank_name, routing_number, sort_code, iban, bic_swift, deposit_address, status
-				) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'active')
-			`, faID, userID, item.VA.Provider, item.VA.AccountName, item.VA.AccountNumber,
+				) VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'active')
+			`, faID, userID, item.VA.Provider, item.VA.ID, item.VA.AccountName, item.VA.AccountNumber,
 				item.VA.BankName, item.VA.RoutingNumber, item.VA.SortCode, item.VA.IBAN, item.VA.BIC, item.VA.DepositAddress)
 		} else {
 			_, _ = s.pool.Exec(ctx, `
 				UPDATE payment_accounts
 				SET provider = $2,
-					account_name = CASE WHEN account_name = '' THEN $3 ELSE account_name END,
-					account_number = CASE WHEN account_number = '' OR account_number IS NULL THEN $4 ELSE account_number END,
-					bank_name = CASE WHEN bank_name = '' OR bank_name IS NULL THEN $5 ELSE bank_name END,
+					provider_account_id = CASE WHEN (provider_account_id IS NULL OR provider_account_id = '') AND $11 <> '' THEN $11 ELSE provider_account_id END,
+					account_name = CASE WHEN account_name = '' OR account_name IS NULL THEN $3 ELSE account_name END,
+					account_number = $4,
+					bank_name = $5,
 					routing_number = CASE WHEN routing_number = '' OR routing_number IS NULL THEN $6 ELSE routing_number END,
 					sort_code = CASE WHEN sort_code = '' OR sort_code IS NULL THEN $7 ELSE sort_code END,
 					iban = CASE WHEN iban = '' OR iban IS NULL THEN $8 ELSE iban END,
@@ -384,7 +408,7 @@ func (s *WalletService) provisionInitialAccountsDB(ctx context.Context, userID i
 					updated_at = NOW()
 				WHERE id = $1::uuid
 			`, paID, item.VA.Provider, item.VA.AccountName, item.VA.AccountNumber,
-				item.VA.BankName, item.VA.RoutingNumber, item.VA.SortCode, item.VA.IBAN, item.VA.BIC, item.VA.DepositAddress)
+				item.VA.BankName, item.VA.RoutingNumber, item.VA.SortCode, item.VA.IBAN, item.VA.BIC, item.VA.DepositAddress, item.VA.ID)
 		}
 
 		// 3. Ensure customer ledger account exists
@@ -562,4 +586,17 @@ func (s *WalletService) GetUserLedgerTransactions(ctx context.Context, userID in
 	}
 	return []*domain.LedgerTransaction{}, nil
 }
+
+func isDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, ch := range s {
+		if ch < '0' || ch > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 

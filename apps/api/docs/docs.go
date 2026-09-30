@@ -1163,7 +1163,7 @@ const docTemplate = `{
         },
         "/banks": {
             "get": {
-                "description": "Returns a list of real Nigerian banks from Paystack",
+                "description": "Returns a list of real Nigerian banks from Flutterwave",
                 "consumes": [
                     "application/json"
                 ],
@@ -1194,7 +1194,7 @@ const docTemplate = `{
         },
         "/banks/validate": {
             "get": {
-                "description": "Validates account number and bank code via Paystack, returning the account name",
+                "description": "Validates account number and bank code via Flutterwave, returning the account name",
                 "consumes": [
                     "application/json"
                 ],
@@ -3409,9 +3409,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/webhooks/paystack": {
+        "/webhooks/flutterwave": {
             "post": {
-                "description": "Receives and processes Paystack payment notification events. Verifies the HMAC-SHA512 signature in x-paystack-signature.",
+                "description": "Receives and processes Flutterwave payment notification events. Verifies the secret hash in verif-hash header.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3421,7 +3421,7 @@ const docTemplate = `{
                 "tags": [
                     "Webhooks"
                 ],
-                "summary": "Paystack payment webhook",
+                "summary": "Flutterwave payment webhook",
                 "responses": {
                     "200": {
                         "description": "Event processed",

@@ -159,7 +159,14 @@ export const chipaApi = {
   logout: () => authService.logout(),
 
   // 10. KYC Identity Verification
-  submitTier1: (payload: { bvn?: string; nin?: string; country_code?: string }) =>
-    kycService.submitTier1(payload),
+  submitTier1: (payload: {
+    bvn?: string;
+    nin?: string;
+    country_code?: string;
+    document_type?: string;
+    id_number?: string;
+    first_name?: string;
+    last_name?: string;
+  }) => kycService.submitTier1(payload),
   getKYCStatus: () => kycService.getKYCStatus(),
 };

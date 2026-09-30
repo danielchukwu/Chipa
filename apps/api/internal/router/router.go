@@ -17,13 +17,14 @@ import (
 
 	_ "chipa/api/docs"
 	"chipa/api/internal/config"
+	"chipa/api/internal/crypto"
 	"chipa/api/internal/db/queries"
 	"chipa/api/internal/handler"
 	"chipa/api/internal/logger"
 	apimiddleware "chipa/api/internal/middleware"
 	bridgeprovider "chipa/api/internal/provider/bridge"
 	cardprovider "chipa/api/internal/provider/card"
-	paystackprovider "chipa/api/internal/provider/paystack"
+	flutterwaveprovider "chipa/api/internal/provider/flutterwave"
 	vasprovider "chipa/api/internal/provider/vas"
 	"chipa/api/internal/service/audit"
 	authservice "chipa/api/internal/service/auth"
@@ -73,29 +74,32 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	}
 
 	var bridgeAPIKey, bridgeBaseURL string
-	var paystackSecretKey, paystackPublicKey, paystackBaseURL string
+	var flwSecretKey, flwPublicKey, flwEncryptionKey, flwSecretHash, flwBaseURL string
 	if cfg != nil {
 		bridgeAPIKey = cfg.Bridge.APIKey
 		bridgeBaseURL = cfg.Bridge.BaseURL
-		paystackSecretKey = cfg.Paystack.SecretKey
-		paystackPublicKey = cfg.Paystack.PublicKey
-		paystackBaseURL = cfg.Paystack.BaseURL
+		flwSecretKey = cfg.Flutterwave.SecretKey
+		flwPublicKey = cfg.Flutterwave.PublicKey
+		flwEncryptionKey = cfg.Flutterwave.EncryptionKey
+		flwSecretHash = cfg.Flutterwave.SecretHash
+		flwBaseURL = cfg.Flutterwave.BaseURL
 	}
 
-	// BaaS & Payment Rails (Bridge.xyz for USD/EUR/GBP/USDC, Paystack for NGN)
+	// BaaS & Payment Rails (Bridge.xyz for USD/EUR/GBP/USDC, Flutterwave for NGN)
 	bridgeClient := bridgeprovider.NewBridgeClient(bridgeAPIKey, bridgeBaseURL)
-	paystackClient := paystackprovider.NewPaystackClient(paystackSecretKey, paystackPublicKey, paystackBaseURL)
+	flutterwaveClient := flutterwaveprovider.NewFlutterwaveClient(flwSecretKey, flwPublicKey, flwEncryptionKey, flwSecretHash, flwBaseURL)
 	sandboxCardProvider := cardprovider.NewSandboxCardProvider()
 	sandboxVASProvider := vasprovider.NewSandboxVASProvider()
 
 	// Core Fintech Services
+	vault := crypto.NewVault()
 	ledgerSvc := fintechservice.NewLedgerService(pool)
-	walletSvc := fintechservice.NewWalletService(pool, bridgeClient, paystackClient, ledgerSvc)
+	walletSvc := fintechservice.NewWalletService(pool, bridgeClient, flutterwaveClient, ledgerSvc, vault)
 	cardSvc := fintechservice.NewCardService(pool, sandboxCardProvider, walletSvc, ledgerSvc)
 	fxSvc := fintechservice.NewFXService(walletSvc)
 	vasSvc := fintechservice.NewVASService(sandboxVASProvider, walletSvc)
 	pinSvc := fintechservice.NewPINService(pool, walletSvc)
-	kycSvc := fintechservice.NewKYCService(pool, paystackClient)
+	kycSvc := fintechservice.NewKYCService(pool, flutterwaveClient, vault)
 	kycSvc.SetWalletService(walletSvc)
 
 	utilsInstance := utils.NewUtils(pool)
@@ -103,7 +107,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	statesService := statesservice.NewStatesService(q, rdb)
 	permissionsService := permissionsservice.NewPermissionsService()
 	referralsService := referralsservice.NewReferralsService(q)
-	usersService := usersservice.NewUsersService(q, rdb, paystackClient)
+	usersService := usersservice.NewUsersService(q, rdb, flutterwaveClient)
 	authService := authservice.NewAuthService(pool, q, rdb, messagingService, usersService, jwtSecret, accessExp, refreshExp)
 	filesService := filesservice.NewFilesService(q)
 
@@ -133,7 +137,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	referralsH := referralshandler.NewHandler(referralsService, utilsInstance)
 	statesH := stateshandler.NewHandler(statesService, utilsInstance)
 	systemSettingsH := systemsettingshandler.NewHandler(q, utilsInstance)
-	webhooksH := webhookshandler.NewHandler(walletSvc, paystackClient, utilsInstance)
+	webhooksH := webhookshandler.NewHandler(walletSvc, flutterwaveClient, utilsInstance)
 
 	var filesH *fileshandler.Handler
 	if r2Svc != nil {
@@ -182,8 +186,8 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	mainRouter.Post(utils.ApiUrls.Auth.Refresh, authH.Refresh)
 	mainRouter.Post(utils.ApiUrls.Auth.ChangePasswordByEmail, authH.ChangePasswordByEmail)
 
-	// Paystack Webhook
-	mainRouter.Post("/api/v1/webhooks/paystack", webhooksH.HandlePaystack)
+	// Flutterwave Webhook
+	mainRouter.Post("/api/v1/webhooks/flutterwave", webhooksH.HandleFlutterwave)
 
 	// Banks & States
 	mainRouter.Get("/api/v1/banks", usersH.GetBanks)
@@ -222,7 +226,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	// Progressive KYC Compliance Tiers (0-3) & AML Screening
 	mainRouter.With(authMiddleware).Get("/api/v1/kyc/status", kycH.GetKYCStatus)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier1", kycH.SubmitTier1)
-	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier1/pan-african", kycH.SubmitTier1PanAfrican)
+	// mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier1/pan-african", kycH.SubmitTier1PanAfrican)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier2", kycH.SubmitTier2)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/tier3", kycH.SubmitTier3)
 	mainRouter.With(authMiddleware).Post("/api/v1/kyc/compliance-screening", kycH.UpdateComplianceScreening)

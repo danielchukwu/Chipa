@@ -1,0 +1,91 @@
+Started 11/09/2026
+
+Chipa
+
+- SEO and AI SEO
+
+- Option to use Visa and Mastercard
+- Create several cards
+- Allocate funds to whichever cards
+- Create card options: NGN | USA | EUR | GBP | Duram | Kuwait | UAE | AUS
+- Allow users to Freeze and Unfreeze cards
+- We will be using bridge.xyz for issueing USD, EUR, GBP accounts and stablecoin wallets.
+- We will be using flutterwave for local payments.
+-
+
+GOALS
+Sep 23
+Ensure flutterwave DVA can be created successfully
+
+Bill is what goes through stages,
+Bills, notions, message from executives (president wrote to ), notices (they go to all )
+
+- Rebrand announcements to notices
+- Proceedings (an agenda for every national assembly seating [Opening prayer, blah blah blah])
+- When adding HOUSE OR SENATE members the title is automatically be Rep (Honourable) or Senator
+
+---
+
+Civil servants are the ones assigned as committee clerks (Honourable members see themselves as equals so they can't and are not interested in being secretaries to their own employe's)
+We need to add it for State Assembly
+State is an easier target for us so we want to target States (Oga knows a lot of governor's and co)
+
+BUSINESSES
+
+- NYSC Services (Reposting, Relocation, etc) | www.corperwe.com
+- Company Registration (Nigeria, USA, UK, etc)
+- Travelling Agency (Nigeria)
+
+OFFER
+-------
+
+ANCHOR BUIZ
+Registration: 200k (First timer: 60k discount | Urgency: only available for the next 7 days from time of first contact)
+Refer people who register and earn 10k
+
+Registration ad ons:
+
+- CAC Certificate
+- MEMART
+- Status Report
+
+Free ad ons:
+
+- Free company logo (if there isn't one)
+- Board Resolution Document | [ Not valid since its for company opening ]
+
+Upsell
+
+- Static Website: 300k (3 free changes request)
+- Domain-name: 20k to 80k (Yearly Renewal Plan)
+- Dedicated website changes: 100k plan (5 major changes) | [Pay 1 year and get 20% discount]
+- Hosting cost: 50k [Pay 1 year and get 20% discount]
+- Every month hosting fee is 50k (Pay 1 year and get 20% discount)
+
+CORPER WEE
+
+- Direct Posting | Relocation -> to FCT, LAGOS, PORT HACOURT is 100k
+- Other states 50k
+  Refer and earn 2k to 5k
+
+---
+
+Fincra
+Maplerad (https://maplerad.dev/reference/create-usd-account)
+Paystack
+Bridge (https://www.bridge.xyz/requestfreedemo)
+Unit (https://app.s.unit.sh/)
+Synctera (https://www.synctera.com/contact-us)
+Clubkonnect (https://www.clubkonnect.com/BuyElectricity.asp)
+
+Paybeels
+Kotani
+
+Phone numbers
+MTN 1 - Business Registration () | Anchor Formation [442, Four Four Two, ...]
+MTN 1 - Travelling Agency | CrossBorder
+MTN 1 - Chipa
+
+NEW NYSC MTN - NYSC
+Drop Shipping
+Agent for People looking to go to the UK

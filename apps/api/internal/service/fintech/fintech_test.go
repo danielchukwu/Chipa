@@ -8,7 +8,7 @@ import (
 	"chipa/api/internal/domain"
 	"chipa/api/internal/provider/bridge"
 	cardprovider "chipa/api/internal/provider/card"
-	"chipa/api/internal/provider/paystack"
+	"chipa/api/internal/provider/flutterwave"
 	vasprovider "chipa/api/internal/provider/vas"
 	"chipa/api/internal/service/fintech"
 
@@ -19,12 +19,12 @@ import (
 
 func setupTestServices() (*fintech.WalletService, *fintech.CardService, *fintech.FXService, *fintech.VASService, *fintech.PINService) {
 	bridgeClient := bridge.NewBridgeClient("test_key", "http://mock")
-	paystackClient := paystack.NewPaystackClient("mock_sec", "mock_pub", "http://mock")
+	flwClient := flutterwave.NewFlutterwaveClient("mock_sec", "mock_pub", "mock_enc", "mock_hash", "http://mock")
 	cardProv := cardprovider.NewSandboxCardProvider()
 	vasProv := vasprovider.NewSandboxVASProvider()
 
 	ledgerSvc := fintech.NewLedgerService(nil)
-	walletSvc := fintech.NewWalletService(nil, bridgeClient, paystackClient, ledgerSvc)
+	walletSvc := fintech.NewWalletService(nil, bridgeClient, flwClient, ledgerSvc)
 	cardSvc := fintech.NewCardService(nil, cardProv, walletSvc, ledgerSvc)
 	fxSvc := fintech.NewFXService(walletSvc)
 	vasSvc := fintech.NewVASService(vasProv, walletSvc)
@@ -202,9 +202,7 @@ func TestPINService(t *testing.T) {
 		}
 	}
 	require.NotNil(t, ngnWallet)
-	assert.NotEmpty(t, ngnWallet.AccountNumber)
-	assert.Contains(t, ngnWallet.BankName, "Titan Trust Bank")
-	assert.Equal(t, "active", ngnWallet.Status)
+	assert.Equal(t, "unprovisioned", ngnWallet.Status)
 
 	// Rejects non-4-digit PIN
 	err = pinSvc.SetPIN(ctx, userID, "123")
@@ -259,18 +257,10 @@ func TestWalletService_LiveDB_AccountProvisioning(t *testing.T) {
 	ngnAcc, err := walletSvc.EnsureUserAccounts(ctx, 1)
 	require.NoError(t, err)
 	require.NotNil(t, ngnAcc)
-	assert.NotEmpty(t, ngnAcc.AccountNumber)
-	assert.Contains(t, ngnAcc.BankName, "Titan Trust Bank")
 
 	// Check all 4 wallets are returned
 	wallets, err := walletSvc.GetUserWallets(ctx, 1, "Daniel Chukwu")
 	require.NoError(t, err)
 	assert.Len(t, wallets, 4)
-
-	// Verify payment_accounts in database is now populated
-	var paymentAccCount int64
-	err = pool.QueryRow(ctx, "SELECT COUNT(*) FROM payment_accounts WHERE user_id = 1").Scan(&paymentAccCount)
-	require.NoError(t, err)
-	assert.Equal(t, int64(4), paymentAccCount)
 }
 

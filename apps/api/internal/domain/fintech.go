@@ -18,7 +18,7 @@ const (
 	CurrencyUSDC Currency = "USDC"
 )
 
-// VirtualAccount represents a dedicated user account issued by Bridge.xyz (USD/EUR/GBP/USDC) or Paystack (NGN).
+// VirtualAccount represents a dedicated user account issued by Bridge.xyz (USD/EUR/GBP/USDC) or Flutterwave (NGN).
 type VirtualAccount struct {
 	ID                  string    `json:"id"`
 	UserID              int64     `json:"user_id"`
@@ -30,7 +30,7 @@ type VirtualAccount struct {
 	AccountName         string    `json:"account_name"`
 	AccountNumber       string    `json:"account_number"`
 	BankName            string    `json:"bank_name"`
-	Provider            string    `json:"provider"` // 'bridge', 'paystack'
+	Provider            string    `json:"provider"` // 'bridge', 'flutterwave'
 	// Bridge.xyz USD specific
 	RoutingNumber       string    `json:"routing_number,omitempty"`
 	// Bridge.xyz GBP specific

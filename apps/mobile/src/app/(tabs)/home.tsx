@@ -27,6 +27,7 @@ import { MoreOptionsDrawer } from "@/components/ui/bottom-sheets/more-options-dr
 import { RecentConversionsDrawer } from "@/components/ui/bottom-sheets/recent-conversions-drawer";
 import { SelectAccountDrawer } from "@/components/ui/bottom-sheets/select-account-drawer";
 import {
+  EURoundFlag,
   NigeriaRoundFlag,
   UKRoundFlag,
   USRoundFlag,
@@ -278,7 +279,7 @@ function HomeHeader({
     if (accountNumber && accountNumber !== "Generating...") {
       Alert.alert(
         "Chipa Bank Account",
-        `${bankName || "Titan Trust Bank (Paystack)"}\nAccount Number: ${accountNumber}\n\nAccount details copied to clipboard!`,
+        `${bankName || "Wema Bank (Flutterwave)"}\nAccount Number: ${accountNumber}\n\nAccount details copied to clipboard!`,
         [
           { text: "Add Money", onPress: onAddMoney },
           { text: "Close", style: "cancel" },
@@ -397,19 +398,22 @@ function BalanceSection({
   );
 }
 
-// ─── Horizontal Currency Cards Section (L359-L387) ──────────────────────────
+// ─── Horizontal Currency Cards Section ──────────────────────────
+interface AccountItemDisplay {
+  currency: string;
+  symbol: string;
+  balanceFormatted: string;
+  flag: React.ReactNode;
+}
+
 function CurrencyCardsSection({
   selectedCurrency,
   onSelectCurrency,
-  ngnBalance = "0.00",
-  usdBalance = "0.00",
-  gbpBalance = "0.00",
+  accounts = [],
 }: {
-  selectedCurrency: "NGN" | "USD" | "GBP";
-  onSelectCurrency: (currency: "NGN" | "USD" | "GBP") => void;
-  ngnBalance?: string;
-  usdBalance?: string;
-  gbpBalance?: string;
+  selectedCurrency: string;
+  onSelectCurrency: (currency: string) => void;
+  accounts: AccountItemDisplay[];
 }) {
   return (
     <ScrollView
@@ -419,27 +423,16 @@ function CurrencyCardsSection({
       className="mb-5"
     >
       <View className="flex flex-row gap-3">
-        <CurrencyCard
-          flag={<NigeriaRoundFlag size={26} />}
-          currency="NGN"
-          balance={ngnBalance}
-          active={selectedCurrency === "NGN"}
-          onPress={() => onSelectCurrency("NGN")}
-        />
-        <CurrencyCard
-          flag={<USRoundFlag size={26} />}
-          currency="USD"
-          balance={usdBalance}
-          active={selectedCurrency === "USD"}
-          onPress={() => onSelectCurrency("USD")}
-        />
-        <CurrencyCard
-          flag={<UKRoundFlag size={26} />}
-          currency="GBP"
-          balance={gbpBalance}
-          active={selectedCurrency === "GBP"}
-          onPress={() => onSelectCurrency("GBP")}
-        />
+        {accounts.map((acc) => (
+          <CurrencyCard
+            key={acc.currency}
+            flag={acc.flag}
+            currency={acc.currency}
+            balance={acc.balanceFormatted}
+            active={selectedCurrency === acc.currency}
+            onPress={() => onSelectCurrency(acc.currency)}
+          />
+        ))}
       </View>
     </ScrollView>
   );
@@ -625,9 +618,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [balanceHidden, setBalanceHidden] = useState(false);
 
-  const [selectedCurrency, setSelectedCurrency] = useState<
-    "NGN" | "USD" | "GBP"
-  >("NGN");
+  const [selectedCurrency, setSelectedCurrency] = useState<string>("NGN");
   const [isTransferTypeDrawerVisible, setIsTransferTypeDrawerVisible] =
     useState(false);
   const [isMoreDrawerVisible, setIsMoreDrawerVisible] = useState(false);
@@ -642,47 +633,77 @@ export default function HomeScreen() {
 
   if (!user) return null;
 
-  const ngnWallet = wallets?.find((w) => w.currency === "NGN");
-  const usdWallet = wallets?.find((w) => w.currency === "USD");
-  const gbpWallet = wallets?.find((w) => w.currency === "GBP");
+  const getFlagIcon = (currency: string) => {
+    switch (currency) {
+      case "USD":
+        return <USRoundFlag size={26} />;
+      case "GBP":
+        return <UKRoundFlag size={26} />;
+      case "EUR":
+        return <EURoundFlag size={26} />;
+      case "NGN":
+      default:
+        return <NigeriaRoundFlag size={26} />;
+    }
+  };
 
+  const getCurrencySymbol = (currency: string) => {
+    switch (currency) {
+      case "USD":
+        return "$";
+      case "GBP":
+        return "£";
+      case "EUR":
+        return "€";
+      case "NGN":
+      default:
+        return "₦";
+    }
+  };
+
+  // Fallback default currencies if network call has not loaded yet
+  const defaultCurrencies = [
+    { currency: "NGN", balance: "202,800.00" },
+    { currency: "USD", balance: "0.00" },
+    { currency: "GBP", balance: "45.00" },
+    { currency: "EUR", balance: "0.00" },
+  ];
+
+  const displayedAccounts = (
+    wallets && wallets.length > 0
+      ? wallets.map((w) => ({
+          currency: w.currency,
+          symbol: w.symbol || getCurrencySymbol(w.currency),
+          balanceFormatted:
+            w.balance !== undefined
+              ? Number(w.balance).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                })
+              : "0.00",
+          flag: getFlagIcon(w.currency),
+        }))
+      : defaultCurrencies.map((d) => ({
+          currency: d.currency,
+          symbol: getCurrencySymbol(d.currency),
+          balanceFormatted: d.balance,
+          flag: getFlagIcon(d.currency),
+        }))
+  );
+
+  const activeAccount = displayedAccounts.find(
+    (acc) => acc.currency === selectedCurrency
+  ) || displayedAccounts[0];
+
+  const activeBalanceFormatted = activeAccount ? activeAccount.balanceFormatted : "0.00";
+  const activeCurrencySymbol = activeAccount ? activeAccount.symbol : "₦";
+
+  const ngnWallet = wallets?.find((w) => w.currency === "NGN");
   const liveAccountNumber =
     ngnWallet?.accountNumber || ngnWallet?.account_number || user.accountNumber;
   const liveBankName =
     ngnWallet?.bankName ||
     ngnWallet?.bank_name ||
-    "Titan Trust Bank (Paystack)";
-
-  const ngnBalanceFormatted =
-    ngnWallet?.balance !== undefined
-      ? Number(ngnWallet.balance).toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-        })
-      : "202,800.00";
-
-  const usdBalanceFormatted =
-    usdWallet?.balance !== undefined
-      ? Number(usdWallet.balance).toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-        })
-      : "0.00";
-
-  const gbpBalanceFormatted =
-    gbpWallet?.balance !== undefined
-      ? Number(gbpWallet.balance).toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-        })
-      : "45.00";
-
-  const activeBalanceFormatted =
-    selectedCurrency === "USD"
-      ? usdBalanceFormatted
-      : selectedCurrency === "GBP"
-        ? gbpBalanceFormatted
-        : ngnBalanceFormatted;
-
-  const activeCurrencySymbol =
-    selectedCurrency === "USD" ? "$" : selectedCurrency === "GBP" ? "£" : "₦";
+    "Wema Bank (Flutterwave)";
 
   const handleConvertPress = () => {
     if (recentConversions && recentConversions.length > 0) {
@@ -753,9 +774,7 @@ export default function HomeScreen() {
         <CurrencyCardsSection
           selectedCurrency={selectedCurrency}
           onSelectCurrency={setSelectedCurrency}
-          ngnBalance={ngnBalanceFormatted}
-          usdBalance={usdBalanceFormatted}
-          gbpBalance={gbpBalanceFormatted}
+          accounts={displayedAccounts}
         />
 
         {/* Recent Transactions Card */}

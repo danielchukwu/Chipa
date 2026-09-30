@@ -3,12 +3,13 @@ package fintech
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"chipa/api/internal/crypto"
-	"chipa/api/internal/provider/paystack"
+	"chipa/api/internal/provider/flutterwave"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -56,16 +57,18 @@ type Tier1Payload struct {
 	IDNumber     string `json:"id_number"`
 	BVN          string `json:"bvn,omitempty"`
 	NIN          string `json:"nin,omitempty"`
+	FirstName    string `json:"first_name,omitempty"`
+	LastName     string `json:"last_name,omitempty"`
 }
 
 type KYCService struct {
-	pool           *pgxpool.Pool
-	paystackClient *paystack.PaystackClient
-	walletSvc      *WalletService
-	vault          *crypto.Vault
+	pool              *pgxpool.Pool
+	flutterwaveClient *flutterwave.FlutterwaveClient
+	walletSvc         *WalletService
+	vault             *crypto.Vault
 }
 
-func NewKYCService(pool *pgxpool.Pool, paystackClient *paystack.PaystackClient, vault ...*crypto.Vault) *KYCService {
+func NewKYCService(pool *pgxpool.Pool, flutterwaveClient *flutterwave.FlutterwaveClient, vault ...*crypto.Vault) *KYCService {
 	var v *crypto.Vault
 	if len(vault) > 0 && vault[0] != nil {
 		v = vault[0]
@@ -73,9 +76,9 @@ func NewKYCService(pool *pgxpool.Pool, paystackClient *paystack.PaystackClient, 
 		v = crypto.NewVault()
 	}
 	return &KYCService{
-		pool:           pool,
-		paystackClient: paystackClient,
-		vault:          v,
+		pool:              pool,
+		flutterwaveClient: flutterwaveClient,
+		vault:             v,
 	}
 }
 
@@ -325,8 +328,32 @@ func (s *KYCService) SubmitTier1PanAfrican(ctx context.Context, userID int64, pa
 		if nin != "" && len(nin) != 11 {
 			return nil, fmt.Errorf("NIN must be exactly 11 digits")
 		}
-		if s.paystackClient != nil && bvn != "" {
-			valid, err := s.paystackClient.ValidateBVN(ctx, bvn, "", "", "")
+		if s.flutterwaveClient != nil && bvn != "" {
+			var firstName, lastName string
+			if payload.FirstName != "" {
+				firstName = payload.FirstName
+			}
+			if payload.LastName != "" {
+				lastName = payload.LastName
+			}
+			if s.pool != nil && (firstName == "" || lastName == "") {
+				var dbFirst, dbLast string
+				_ = s.pool.QueryRow(ctx, `
+					SELECT COALESCE(up.first_name, u.first_name, ''), COALESCE(up.last_name, u.last_name, '')
+					FROM users u
+					LEFT JOIN user_profiles up ON up.user_id = u.id
+					WHERE u.id = $1
+				`, userID).Scan(&dbFirst, &dbLast)
+				if firstName == "" {
+					firstName = dbFirst
+				}
+				if lastName == "" {
+					lastName = dbLast
+				}
+			}
+			valid, err := s.flutterwaveClient.ValidateBVN(ctx, bvn, firstName, lastName, "")
+			slog.Info("BVN verification result", "valid", valid, "error", err)
+			
 			if err != nil || !valid {
 				return nil, fmt.Errorf("BVN verification failed: %w", err)
 			}
@@ -448,7 +475,7 @@ func (s *KYCService) SubmitTier1PanAfrican(ctx context.Context, userID int64, pa
 		`, userID, docType == "tax_id" || docType == "kra_pin", bvn != "", nin != "")
 
 		// Determine provider for audit case
-		complianceProvider := "paystack"
+		complianceProvider := "flutterwave"
 		if countryCode != "NG" {
 			complianceProvider = "smile_id"
 		}

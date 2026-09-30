@@ -1,40 +1,15 @@
-Started 11/09/2026
+Todo's
+⬜ Implement add money
+⬜ Implement transfer
+⬜ Smart workflow attatchement: Be able to delete attatchments in workflows already, .
+Use https://nigerianbanks.xyz/ to get bank logos
 
-Chipa
-- SEO and AI SEO
+Deploy Chipa
 
-- Option to use Visa and Mastercard
-- Create several cards
-- Allocate funds to whichever cards
-- Create card options: NGN | USA | EUR | GBP | Duram | Kuwait | UAE | AUS
-- Allow users to Freeze and Unfreeze cards
-- We will be using bridge.xyz for issueing USD, EUR, GBP accounts and stablecoin wallets.
-- We will be using paystack for local payments.
+
+- Call not working unless we close app and open it and try again before it works
+- If driving, do not be able to end the ride as a passenger in an ride that already Started
+- After completing a ride, on leaving a ride we get an error that says rateeUserId should not be empty
 - 
 
 
-GOALS
-Sep 23
-Ensure paystack DVA can be created successfully
-
-
-Bill is what goes through stages,
-Bills, notions, message from executives (president wrote to ), notices (they go to all )
-- Rebrand announcements to notices
-- Proceedings (an agenda for every national assembly seating [Opening prayer, blah blah blah])
-- When adding HOUSE OR SENATE members the title is automatically be Rep (Honourable) or Senator
-
----
-
-
-
-
-Civil servants are the ones assigned as committee clerks (Honourable members see themselves as equals so they can't and are not interested in being secretaries to their own employe's)
-We need to add it for State Assembly
-State is an easier target for us so we want to target States (Oga knows a lot of governor's and co)
-
-
-BUSINESSES
-- NYSC Services (Reposting, Relocation, etc) | www.corperwe.com
-- Company Registration (Nigeria, USA, UK, etc)
-- Travelling Agency (Nigeria)

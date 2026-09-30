@@ -18,6 +18,8 @@ export interface SubmitTier1Request {
   id_number?: string;
   bvn?: string;
   nin?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface SubmitTier2Request {

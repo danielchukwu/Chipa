@@ -42,7 +42,48 @@ export interface LedgerTransaction {
   createdAt: string;
 }
 
+export interface AccountBankDetails {
+  account_name: string;
+  account_number: string;
+  bank_name: string;
+  routing_number?: string;
+  sort_code?: string;
+  iban?: string;
+  bic?: string;
+  deposit_address?: string;
+}
+
+export interface SupportedRail {
+  name: string;
+  settlement_time: string;
+  fee: string;
+}
+
+export interface UserAccount {
+  id: string;
+  type: string;
+  currency: SupportedCurrency;
+  currency_name: string;
+  currency_symbol: string;
+  balance: number;
+  balance_minor: number;
+  available_balance: number;
+  pending_balance: number;
+  status: string;
+  provider: string;
+  bank_details: AccountBankDetails;
+  supported_rails: SupportedRail[];
+  created_at: string;
+}
+
+export interface AccountsSummary {
+  total_balance_usd_equivalent: number;
+  base_currency: string;
+}
+
 export interface GetWalletsResponse {
+  summary?: AccountsSummary;
+  accounts?: UserAccount[];
   wallets: Wallet[];
 }
 

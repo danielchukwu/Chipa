@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Alert, Pressable, Text, View } from "react-native";
 
+import { useWallets } from "@/api/hooks/use-wallets";
 import { DraggableBottomSheet } from "@/components/ui/draggable-bottom-sheet";
 import { ChevronRightIcon } from "@/components/ui/icons/app-icons";
 import {
@@ -22,12 +23,36 @@ export interface SelectAccountDrawerProps {
 export function SelectAccountDrawer({
   visible,
   onClose,
-  userAccountNumber = "9031420494",
+  userAccountNumber,
   chipaId = "011784892",
 }: SelectAccountDrawerProps) {
   const router = useRouter();
+  const { data: wallets } = useWallets();
 
-  const handleSelect = (currency: "NGN" | "USD") => {
+  const ngnWallet = wallets?.find((w) => w.currency === "NGN");
+  const usdWallet = wallets?.find((w) => w.currency === "USD");
+  const gbpWallet = wallets?.find((w) => w.currency === "GBP");
+  const eurWallet = wallets?.find((w) => w.currency === "EUR");
+
+  const ngnAccNumber =
+    ngnWallet?.accountNumber ||
+    ngnWallet?.account_number ||
+    userAccountNumber ||
+    "Generating...";
+  const usdAccNumber =
+    usdWallet?.accountNumber ||
+    usdWallet?.account_number ||
+    (usdWallet ? "Active" : undefined);
+  const gbpAccNumber =
+    gbpWallet?.accountNumber ||
+    gbpWallet?.account_number ||
+    (gbpWallet ? "Active" : undefined);
+  const eurAccNumber =
+    eurWallet?.accountNumber ||
+    eurWallet?.account_number ||
+    (eurWallet ? "Active" : undefined);
+
+  const handleSelect = (currency: "NGN" | "USD" | "GBP" | "EUR") => {
     onClose();
     router.push({
       pathname: "/add-money" as any,
@@ -58,7 +83,7 @@ export function SelectAccountDrawer({
     onClose();
     Alert.alert(
       "Chipa Account",
-      `Your Chipa Account ID is ${chipaId}. Friends can send you funds instantly using this ID or your Chipa tag @chioma.`,
+      `Your Chipa Account ID is ${chipaId}. Friends can send you funds instantly using this ID or your Chipa tag.`,
       [
         { text: "Close", style: "cancel" },
         {
@@ -92,7 +117,7 @@ export function SelectAccountDrawer({
         <View className="flex-row items-center gap-2.5">
           <View className="bg-[#E5E7EB] rounded-xl px-3.5 py-1.5">
             <Text className="font-satoshi text-sm font-semibold text-[#1F2937]">
-              {userAccountNumber}
+              {ngnAccNumber}
             </Text>
           </View>
           <ChevronRightIcon color="#374151" />
@@ -112,18 +137,28 @@ export function SelectAccountDrawer({
         </View>
 
         <View className="flex-row items-center gap-2.5">
-          <View className="bg-[#E5E7EB] rounded-xl px-3.5 py-1.5">
-            <Text className="font-satoshi text-sm font-semibold text-[#1F2937]">
-              {userAccountNumber}
-            </Text>
-          </View>
+          {usdAccNumber ? (
+            <View className="bg-[#E5E7EB] rounded-xl px-3.5 py-1.5">
+              <Text className="font-satoshi text-sm font-semibold text-[#1F2937]">
+                {usdAccNumber}
+              </Text>
+            </View>
+          ) : (
+            <View className="bg-[#E6F0FA] rounded-xl px-3.5 py-1.5">
+              <Text className="font-satoshi text-sm font-semibold text-[#1E293B]">
+                Get Account
+              </Text>
+            </View>
+          )}
           <ChevronRightIcon color="#374151" />
         </View>
       </Pressable>
 
       {/* 3. GBP Account */}
       <Pressable
-        onPress={() => handleGetAccount("GBP")}
+        onPress={() =>
+          gbpAccNumber ? handleSelect("GBP") : handleGetAccount("GBP")
+        }
         className="flex-row items-center justify-between py-3.5 active:bg-gray-50 rounded-2xl px-1 mb-1"
       >
         <View className="flex-row items-center gap-3.5">
@@ -134,9 +169,21 @@ export function SelectAccountDrawer({
         </View>
 
         <View className="flex-row items-center gap-2.5">
-          <View className="bg-[#E6F0FA] rounded-xl px-3.5 py-1.5">
-            <Text className="font-satoshi text-sm font-semibold text-[#1E293B]">
-              Get Account
+          <View
+            className={
+              gbpAccNumber
+                ? "bg-[#E5E7EB] rounded-xl px-3.5 py-1.5"
+                : "bg-[#E6F0FA] rounded-xl px-3.5 py-1.5"
+            }
+          >
+            <Text
+              className={
+                gbpAccNumber
+                  ? "font-satoshi text-sm font-semibold text-[#1F2937]"
+                  : "font-satoshi text-sm font-semibold text-[#1E293B]"
+              }
+            >
+              {gbpAccNumber || "Get Account"}
             </Text>
           </View>
           <ChevronRightIcon color="#374151" />
@@ -145,7 +192,9 @@ export function SelectAccountDrawer({
 
       {/* 4. EUR Account */}
       <Pressable
-        onPress={() => handleGetAccount("EUR")}
+        onPress={() =>
+          eurAccNumber ? handleSelect("EUR") : handleGetAccount("EUR")
+        }
         className="flex-row items-center justify-between py-3.5 active:bg-gray-50 rounded-2xl px-1 mb-1"
       >
         <View className="flex-row items-center gap-3.5">
@@ -156,9 +205,21 @@ export function SelectAccountDrawer({
         </View>
 
         <View className="flex-row items-center gap-2.5">
-          <View className="bg-[#E6F0FA] rounded-xl px-3.5 py-1.5">
-            <Text className="font-satoshi text-sm font-semibold text-[#1E293B]">
-              Get Account
+          <View
+            className={
+              eurAccNumber
+                ? "bg-[#E5E7EB] rounded-xl px-3.5 py-1.5"
+                : "bg-[#E6F0FA] rounded-xl px-3.5 py-1.5"
+            }
+          >
+            <Text
+              className={
+                eurAccNumber
+                  ? "font-satoshi text-sm font-semibold text-[#1F2937]"
+                  : "font-satoshi text-sm font-semibold text-[#1E293B]"
+              }
+            >
+              {eurAccNumber || "Get Account"}
             </Text>
           </View>
           <ChevronRightIcon color="#374151" />

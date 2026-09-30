@@ -2,6 +2,7 @@ package kychandler
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	apimiddleware "chipa/api/internal/middleware"
@@ -55,6 +56,8 @@ type SubmitTier1Request struct {
 	DocumentNumber string `json:"document_number,omitempty" example:"22222222222"`
 	BVN            string `json:"bvn,omitempty" example:"22222222222"`
 	NIN            string `json:"nin,omitempty" example:"11111111111"`
+	FirstName      string `json:"first_name,omitempty" example:"Daniel"`
+	LastName       string `json:"last_name,omitempty" example:"Chukwu"`
 }
 
 // SubmitTier1 godoc
@@ -73,15 +76,16 @@ type SubmitTier1Request struct {
 func (h *Handler) SubmitTier1(w http.ResponseWriter, r *http.Request) {
 	claims, ok := h.utils.CheckRoles(r, w, apimiddleware.ClaimsKey)
 	if !ok {
+		slog.Warn("[SubmitTier1] Unauthorized access - failed role check")
 		return
 	}
 
 	var req SubmitTier1Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Error("[SubmitTier1] Failed to decode request body", "error", err, "user_id", claims.UserID)
 		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-
 	idNum := req.IDNumber
 	if idNum == "" {
 		idNum = req.DocumentNumber
@@ -96,17 +100,24 @@ func (h *Handler) SubmitTier1(w http.ResponseWriter, r *http.Request) {
 		nin = idNum
 	}
 
-	status, err := h.kycSvc.SubmitTier1PanAfrican(r.Context(), claims.UserID, fintechservice.Tier1Payload{
+	payload := fintechservice.Tier1Payload{
 		CountryCode:  req.CountryCode,
 		DocumentType: req.DocumentType,
 		IDNumber:     idNum,
 		BVN:          bvn,
 		NIN:          nin,
-	})
+		FirstName:    req.FirstName,
+		LastName:     req.LastName,
+	}
+
+	status, err := h.kycSvc.SubmitTier1PanAfrican(r.Context(), claims.UserID, payload)
 	if err != nil {
+		slog.Error("[SubmitTier1] Tier 1 verification failed", "error", err, "user_id", claims.UserID, "payload", payload)
 		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	slog.Info("[SubmitTier1] Tier 1 verification successful", "user_id", claims.UserID, "status", status)
 
 	h.utils.RespondSuccess(w, http.StatusOK, "Tier 1 verified successfully", map[string]interface{}{
 		"kyc": status,

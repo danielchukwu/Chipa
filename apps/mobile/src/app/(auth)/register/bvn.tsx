@@ -27,10 +27,12 @@ export default function BVNVerificationScreen() {
     setLoading(true);
 
     try {
-      // 1. Submit Tier 1 KYC with BVN to Paystack validation
+      // 1. Submit Tier 1 KYC with BVN to Flutterwave validation
       await chipaApi.submitTier1({
         country_code: data.country?.code || "NG",
         bvn: bvn.trim(),
+        first_name: data.firstName?.trim(),
+        last_name: data.lastName?.trim(),
       });
 
       // 2. Persist in register context
@@ -40,7 +42,8 @@ export default function BVNVerificationScreen() {
       router.push("/register/pin" as any);
     } catch (err: any) {
       setError(
-        err?.message || "Failed to verify BVN. Please double check and try again.",
+        err?.message ||
+          "Failed to verify BVN. Please double check and try again.",
       );
     } finally {
       setLoading(false);
@@ -53,7 +56,10 @@ export default function BVNVerificationScreen() {
 
   const handleDialUSSD = () => {
     Linking.openURL("tel:*565*0#").catch(() => {
-      Alert.alert("Dial BVN Code", "Please dial *565*0# from your phone dialer.");
+      Alert.alert(
+        "Dial BVN Code",
+        "Please dial *565*0# from your phone dialer.",
+      );
     });
   };
 
@@ -97,22 +103,6 @@ export default function BVNVerificationScreen() {
           </View>
           <Text className="text-base">📞</Text>
         </Pressable>
-
-        {/* Security & Privacy Reassurance Box */}
-        <View className="bg-[#FFF9EB] border border-amber-200/70 rounded-2xl p-4 mt-5">
-          <View className="flex-row items-start mb-2">
-            <Text className="text-base mr-2">🔒</Text>
-            <Text className="flex-1 font-sans text-xs text-gray-800 leading-4 font-medium">
-              Your BVN does not give Chipa access to your other bank accounts or balances.
-            </Text>
-          </View>
-          <View className="flex-row items-start">
-            <Text className="text-base mr-2">🛡️</Text>
-            <Text className="flex-1 font-sans text-xs text-gray-700 leading-4">
-              It is only used to verify your legal identity and protect against fraud, encrypted with 256-bit AES banking encryption.
-            </Text>
-          </View>
-        </View>
 
         {/* Skip option */}
         <Pressable

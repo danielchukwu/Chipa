@@ -81,10 +81,10 @@ type TestApp struct {
 // and then runs db migrations to the postgres instance to create the necessary tables and data.
 func TestNewApp(t *testing.T, ctx context.Context, cfg *config.Config) *TestApp {
 	// Initialize postgres database
-	pool, _ := db.NewPostgresPool(ctx, cfg.Database.URL)
-	// if err != nil {
-	// 	t.Fatalf("failed to initialize database: %v", err)
-	// }
+	pool, err := db.NewPostgresPool(ctx, cfg.Database.URL)
+	if err != nil {
+		t.Fatalf("failed to initialize database with URL %s: %v", cfg.Database.URL, err)
+	}
 
 	// Run Goose migrations
 	runMigrations(cfg.Database.URL)

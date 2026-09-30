@@ -86,7 +86,7 @@ type UserProfileResponse struct {
 
 // GetBanks handles GET /api/v1/banks
 // @Summary      Get list of banks
-// @Description  Returns a list of real Nigerian banks from Paystack
+// @Description  Returns a list of real Nigerian banks from Flutterwave
 // @Tags         Banks
 // @Accept       json
 // @Produce      json
@@ -107,7 +107,7 @@ func (h *Handler) GetBanks(w http.ResponseWriter, r *http.Request) {
 
 // ValidateBankAccount handles GET /api/v1/banks/validate
 // @Summary      Validate bank account
-// @Description  Validates account number and bank code via Paystack, returning the account name
+// @Description  Validates account number and bank code via Flutterwave, returning the account name
 // @Tags         Banks
 // @Accept       json
 // @Produce      json
