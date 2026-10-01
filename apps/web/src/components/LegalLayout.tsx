@@ -8,6 +8,7 @@ interface LegalLayoutProps {
 	subtitle: string;
 	lastUpdated: string;
 	activeTab: "terms" | "privacy";
+	launchNotice?: string;
 	children: React.ReactNode;
 }
 
@@ -16,6 +17,7 @@ export default function LegalLayout({
 	subtitle,
 	lastUpdated,
 	activeTab,
+	launchNotice,
 	children,
 }: LegalLayoutProps) {
 	return (
@@ -103,7 +105,7 @@ export default function LegalLayout({
 									Important Pre-Launch Notice
 								</h2>
 								<p className="leading-relaxed text-[#6B4300]">
-									Chipa is a financial technology company currently in
+									{launchNotice ?? <>Chipa is a financial technology company currently in
 									pre-launch development and is not yet operating live financial
 									services. Joining our waitlist or browsing our website
 									reserves early access and expresses interest in our
@@ -111,7 +113,7 @@ export default function LegalLayout({
 									remittance, and payment processing services described herein
 									will be provided exclusively through licensed and regulated
 									financial institutions and payment network partners upon
-									commercial launch.
+									commercial launch.</>}
 								</p>
 							</div>
 						</div>

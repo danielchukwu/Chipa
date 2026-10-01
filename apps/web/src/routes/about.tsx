@@ -9,12 +9,12 @@ export const Route = createFileRoute("/about")({
 	head: () => ({
 		meta: [
 			{
-				title: "About Us | Chipa - Borderless Money for Global Earners",
+				title: "About Us | Chipa - Everyday money, made easier",
 			},
 			{
 				name: "description",
 				content:
-					"Discover why we are building Chipa: the unified financial operating system connecting global earners and businesses across Africa to the world economy.",
+					"Learn about Chipa, the everyday money app for naira transfers, airtime, data, electricity and cable TV bills.",
 			},
 		],
 	}),
@@ -22,6 +22,15 @@ export const Route = createFileRoute("/about")({
 });
 
 function AboutPage() {
+	const pageVersion = getAboutPageVersion();
+	return pageVersion === "LP1" ? <AboutLP1 /> : <AboutLP2 />;
+}
+
+function getAboutPageVersion(): "LP1" | "LP2" {
+	return "LP2";
+}
+
+function AboutLP1() {
 	return (
 		<main className="min-h-screen bg-white text-[#111111] overflow-x-hidden">
 			{/* Top subtle tint */}
@@ -485,6 +494,46 @@ function AboutPage() {
 						</div>
 					</div>
 				</div>
+			</section>
+		</main>
+	);
+}
+
+function AboutLP2() {
+	return (
+		<main className="min-h-screen overflow-hidden bg-white text-[#111111]">
+			<section className="bg-[#FCF9F4] py-16 sm:py-24">
+				<div className="page-container grid items-center gap-10 lg:grid-cols-12">
+					<div className="lg:col-span-7">
+						<nav aria-label="Breadcrumb" className="mb-8 flex gap-2 text-sm text-[#777]">
+							<Link to="/" className="hover:text-black">Home</Link><span>/</span><span className="font-semibold text-[#FF793F]">About Us</span>
+						</nav>
+						<p className="text-sm font-bold uppercase tracking-[0.18em] text-[#009A49]">Our mission</p>
+						<h1 className="mt-4 font-display text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">Everyday money, <span className="text-[#FF793F]">made easier.</span></h1>
+						<p className="mt-6 max-w-2xl text-base leading-relaxed text-[#525252] sm:text-lg">Chipa is being built for the everyday ways people in Nigeria use money: receive naira, send local transfers, top up airtime and data, and pay electricity and cable TV bills in one app.</p>
+						<Button variant="black" onClick={openWaitlist} className="mt-8 h-auto rounded-full px-8 py-4 font-semibold">Join the waitlist</Button>
+					</div>
+					<div className="rounded-[2.5rem] bg-[#161618] p-7 text-white sm:p-10 lg:col-span-5">
+						<p className="text-xs font-bold uppercase tracking-widest text-[#FDBE4E]">Chipa at a glance</p>
+						<h2 className="mt-3 font-display text-2xl font-black sm:text-3xl">The essentials, together.</h2>
+						<div className="mt-7 space-y-3">
+							{[["₦", "Receive naira", "Keep your everyday money in one place."], ["↗", "Local transfers", "Send money to local bank accounts."], ["▮", "Airtime & data", "Top up your phone when you need to."], ["⌂", "Household bills", "Pay supported electricity and cable TV bills."]].map(([icon, title, detail]) => <div key={title} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.05] p-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-lg font-bold text-[#FDBE4E]">{icon}</span><div><p className="font-semibold">{title}</p><p className="mt-0.5 text-sm text-white/60">{detail}</p></div></div>)}
+						</div>
+					</div>
+				</div>
+			</section>
+			<section className="page-container py-16 sm:py-24">
+				<div className="mx-auto max-w-3xl text-center">
+					<p className="text-sm font-bold uppercase tracking-[0.18em] text-[#009A49]">Why Chipa</p>
+					<h2 className="mt-4 font-display text-3xl font-black tracking-tight sm:text-5xl">Less app switching. More getting on with your day.</h2>
+					<p className="mt-5 text-base leading-relaxed text-[#555] sm:text-lg">A quick transfer, a phone top-up, or a household bill should be simple to take care of. Chipa brings these regular naira payments into one straightforward experience.</p>
+				</div>
+				<div className="mt-12 grid gap-5 sm:grid-cols-2 lg:mt-16">
+					{[["01", "Built for daily life", "Focus on the everyday payments people make in Nigeria."], ["02", "Clear and straightforward", "See the details of a payment before you confirm it."], ["03", "Useful in one place", "Bring transfers, airtime, data and household bills together."], ["04", "Growing with our users", "We’re starting with local money essentials and improving from there."]].map(([n, title, body]) => <article key={n} className="rounded-3xl border border-[#F0EBE1] bg-[#FAF7F2] p-7 sm:p-9"><span className="text-sm font-black text-[#009A49]">{n}</span><h3 className="mt-3 font-display text-2xl font-bold">{title}</h3><p className="mt-3 leading-relaxed text-[#555]">{body}</p></article>)}
+				</div>
+			</section>
+			<section className="page-container pb-20 sm:pb-28">
+				<div className="rounded-[2.5rem] bg-[#FDBE4E] px-7 py-12 text-center sm:px-12 sm:py-16"><h2 className="font-display text-3xl font-black sm:text-5xl">Everyday money starts here.</h2><p className="mx-auto mt-4 max-w-xl text-[#29251F]">Join the waitlist for a simpler way to receive naira, make local transfers and take care of everyday bills.</p><Button variant="black" onClick={openWaitlist} className="mt-7 h-auto rounded-full px-8 py-4 font-semibold">Join the waitlist</Button></div>
 			</section>
 		</main>
 	);

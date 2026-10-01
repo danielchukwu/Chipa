@@ -21,12 +21,12 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "Chipa - Get paid globally. Live locally.",
+				title: "Chipa - Everyday money, made easier",
 			},
 			{
 				name: "description",
 				content:
-					"Receive, hold, convert and move your money across NGN, USD, EUR and GBP, all in one place with Chipa.",
+					"Receive naira, send local transfers, buy airtime and data, and pay electricity and cable TV bills with Chipa.",
 			},
 		],
 		links: [

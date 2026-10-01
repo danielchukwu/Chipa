@@ -18,6 +18,15 @@ export const Route = createFileRoute("/privacy")({
 });
 
 function PrivacyPage() {
+	const pageVersion = getPrivacyPageVersion();
+	return pageVersion === "LP1" ? <PrivacyLP1 /> : <PrivacyLP2 />;
+}
+
+function getPrivacyPageVersion(): "LP1" | "LP2" {
+	return "LP2";
+}
+
+function PrivacyLP1() {
 	return (
 		<LegalLayout
 			title="Privacy Policy"
@@ -425,6 +434,27 @@ function PrivacyPage() {
 					</p>
 				</div>
 			</section>
+		</LegalLayout>
+	);
+}
+
+function PrivacyLP2() {
+	return (
+		<LegalLayout
+			title="Privacy Policy"
+			subtitle="How we collect, use and protect your personal information on the Chipa website and waitlist."
+			lastUpdated="October 1, 2026"
+			activeTab="privacy"
+			launchNotice="Chipa is in pre-launch development and is not yet operating live payment services. This policy explains how we handle information collected through our website, waitlist and communications."
+		>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">1. Introduction</h2><p>Chipa (“we”, “us” or “our”) respects your privacy. This policy explains how we collect, use, store and protect personal information when you visit our website, join the waitlist or contact us.</p><p>Our planned app is focused on receiving naira, local transfers, airtime and data top-ups, and electricity and cable TV bill payments. This policy covers the website and pre-launch activities; it does not describe data processing for live financial services.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">2. Information we collect</h2><ul className="list-disc space-y-2 pl-6"><li><strong>Information you provide:</strong> your email address when you join the waitlist, and information you include in messages to us.</li><li><strong>Website and device information:</strong> such as browser type, device and network details, pages visited, interactions, timestamps and referral information collected through site analytics and server logs.</li><li><strong>Cookies and local storage:</strong> limited information used for essential site functions and preferences.</li></ul><p>At the pre-launch website stage, we do not ask you to provide bank account credentials, payment card details, BVN, NIN or government identification through the waitlist.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">3. How we use information</h2><ul className="list-disc space-y-2 pl-6"><li>To administer the waitlist and communicate product or launch updates.</li><li>To respond to questions and support requests.</li><li>To understand website usage and improve the site and product experience.</li><li>To protect the site, prevent misuse and meet legal obligations.</li></ul></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">4. Sharing and service providers</h2><p>We do not sell personal information. We may share limited information with service providers that help us operate the website, waitlist, analytics and communications. They may process information only to provide services to us and subject to appropriate protections, or where disclosure is required by law.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">5. Storage and security</h2><p>We use reasonable technical and organizational safeguards to protect personal information. Our website providers may process information in locations outside Nigeria. Where required, we use appropriate safeguards for such processing. No online service can guarantee absolute security.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">6. Retention and your choices</h2><p>We keep waitlist information while it is useful for the purposes described here, or as required by law. You may ask us to access, correct or delete your information, or unsubscribe from updates, by emailing <a href="mailto:hello@usechipa.com" className="font-medium text-[#FF793F] underline">hello@usechipa.com</a>.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">7. Children and policy updates</h2><p>The website and waitlist are not intended for people under 18. We may update this policy as our website or pre-launch activities change. We will post the current version on this page.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">8. Contact us</h2><p>For privacy questions or requests, contact us at <a href="mailto:hello@usechipa.com" className="font-medium text-[#FF793F] underline">hello@usechipa.com</a>.</p></section>
 		</LegalLayout>
 	);
 }

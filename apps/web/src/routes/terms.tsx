@@ -18,6 +18,15 @@ export const Route = createFileRoute("/terms")({
 });
 
 function TermsPage() {
+	const pageVersion = getTermsPageVersion();
+	return pageVersion === "LP1" ? <TermsLP1 /> : <TermsLP2 />;
+}
+
+function getTermsPageVersion(): "LP1" | "LP2" {
+	return "LP2";
+}
+
+function TermsLP1() {
 	return (
 		<LegalLayout
 			title="Terms and Conditions"
@@ -354,6 +363,29 @@ function TermsPage() {
 					</p>
 				</div>
 			</section>
+		</LegalLayout>
+	);
+}
+
+function TermsLP2() {
+	return (
+		<LegalLayout
+			title="Terms and Conditions"
+			subtitle="These terms govern your visit to Chipa’s website, waitlist registration and pre-launch previews."
+			lastUpdated="October 1, 2026"
+			activeTab="terms"
+			launchNotice="Chipa is in pre-launch development and is not yet operating live payment services. The Site describes planned features for receiving naira, local transfers, airtime and data top-ups, and electricity and cable TV bills. Feature availability will depend on applicable requirements and service-provider arrangements at launch."
+		>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">1. Introduction and acceptance</h2><p>These terms govern your access to and use of the Chipa website, waitlist, promotional materials and any pre-release previews. By using the site or joining the waitlist, you agree to these terms and our Privacy Policy.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">2. Pre-launch status</h2><p>Chipa is under development. The site is for information and waitlist registration; it does not let you open or use a live wallet, send a payment, buy airtime or data, or pay a bill. Product images and descriptions are illustrative of planned features, may change, and do not guarantee that a feature will launch or be available to you.</p><p>Joining the waitlist expresses interest in updates and possible early access. It does not create a financial-services relationship or guarantee an invitation.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">3. Company and planned services</h2><p>Chipa is a technology company, not a bank or licensed deposit-taking institution. Our current product direction is an app for receiving naira, sending local bank transfers, buying airtime and data, and paying supported electricity and cable TV bills in Nigeria.</p><p>Any services that become available will be subject to applicable laws, required approvals and arrangements with authorized service providers. Nothing on the site represents that Chipa currently holds deposits or operates live payment services.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">4. Waitlist eligibility</h2><p>You must be at least 18 years old and provide an accurate email address that belongs to you. Do not submit another person’s information without permission.</p><p>Joining the waitlist does not guarantee admission, an invitation or access to an account. If a live product is introduced, additional eligibility checks and identity verification may apply as required by law and service providers.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">5. Changes to the site and product plans</h2><p>We may change, pause or discontinue the website, waitlist or any planned feature. Current plans center on naira receipts, local transfers, airtime and data top-ups, and electricity and cable TV bill payments; no launch date or availability is guaranteed.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">6. Acceptable use</h2><p>You agree not to misuse the site, attempt unauthorized access, interfere with its operation, submit false waitlist information, or use automated means to scrape or disrupt it.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">7. Intellectual property</h2><p>Chipa and its licensors own the site’s content, branding, software and designs. You may view the site for personal, non-commercial purposes. You may not copy, modify or distribute site materials without written permission.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">8. Disclaimers and liability</h2><p>The site and waitlist are provided “as is” and “as available.” We do not guarantee uninterrupted or error-free operation, a particular launch date, or that planned services will become available. To the extent permitted by law, Chipa is not liable for indirect or consequential losses arising from your use of the site or reliance on planned product information.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">9. Changes to these terms</h2><p>We may update these terms as the website and product plans evolve. Updated terms will be posted on this page with a revised date. Your continued use of the site after an update means you accept the revised terms.</p></section>
+			<section className="space-y-4"><h2 className="font-display text-xl font-bold sm:text-2xl">10. Governing law and contact</h2><p>These terms are governed by the laws of the Federal Republic of Nigeria. Questions about these terms can be sent to <a href="mailto:hello@usechipa.com" className="font-medium text-[#FF793F] underline">hello@usechipa.com</a>.</p></section>
 		</LegalLayout>
 	);
 }

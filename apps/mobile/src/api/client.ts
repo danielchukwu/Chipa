@@ -1,62 +1,30 @@
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
-import { tokenStorage } from './storage';
-import { parseApiError } from './errors';
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  InternalAxiosRequestConfig,
+} from "axios";
+import { Platform } from "react-native";
+import { tokenStorage } from "./storage";
+import { parseApiError } from "./errors";
 
 // ---------------------------------------------------------------------------
 // Base URL Resolution
 // ---------------------------------------------------------------------------
 
 export const getApiBaseUrl = (): string => {
-  // 1. Web browser: connect to same host as window, or localhost
-  if (Platform.OS === 'web') {
-    if (typeof window !== 'undefined' && window.location?.hostname) {
-      return `${window.location.protocol}//${window.location.hostname}:4100`;
-    }
-    return process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '') || 'http://localhost:4100';
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, "");
+
+  if (!envUrl) {
+    throw new Error(
+      "[Chipa] EXPO_PUBLIC_API_URL is not set. " +
+        "Configure it in your .env.local (dev) or EAS environment variables (prod) before running the app.",
+    );
   }
 
-  // 2. Explicit HTTPS / remote production or tunnel URL
-  const envUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '');
-  if (envUrl && (envUrl.startsWith('https://') || !envUrl.match(/localhost|127\.0\.0\.1|192\.168\.|10\.|172\./))) {
-    return envUrl;
-  }
-
-  // 3. Physical devices running Expo Go or development client (iOS / Android)
-  // Dynamically extract the computer's LAN IP address from the Metro bundler host
-  const hostUri =
-    Constants.expoConfig?.hostUri ||
-    (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
-    (Constants as any).manifest?.debuggerHost;
-
-  if (hostUri) {
-    const host = hostUri.split(':')[0];
-    if (host && host !== 'localhost' && host !== '127.0.0.1') {
-      return `http://${host}:4100`;
-    }
-  }
-
-  // Fallback for linkingUri (e.g. "exp://192.168.1.5:8081")
-  if (Constants.linkingUri) {
-    const match = Constants.linkingUri.match(/^[a-zA-Z]+:\/\/([^:/]+)/);
-    if (match && match[1] && match[1] !== 'localhost' && match[1] !== '127.0.0.1') {
-      return `http://${match[1]}:4100`;
-    }
-  }
-
-  // 4. Android emulator connects to host machine loopback via 10.0.2.2
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:4100';
-  }
-
-  // 5. Explicit local envUrl if configured
-  if (envUrl && !envUrl.includes('localhost')) {
-    return envUrl;
-  }
-
-  // 6. iOS simulator / localhost fallback
-  return envUrl || 'http://localhost:4100';
+  // All other platforms (iOS, Android) — use the explicitly configured URL.
+  // On physical devices running Expo Go / dev client, set EXPO_PUBLIC_API_URL
+  // to your machine's LAN address (e.g. http://192.168.1.5:4100).
+  return envUrl;
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -65,7 +33,7 @@ export const API_BASE_URL = getApiBaseUrl();
 // Extended Request Configuration
 // ---------------------------------------------------------------------------
 
-declare module 'axios' {
+declare module "axios" {
   export interface AxiosRequestConfig {
     /** Set to false to omit Authorization header even if access token is available */
     requiresAuth?: boolean;
@@ -101,7 +69,9 @@ const processQueue = (error: any, token: string | null = null) => {
 type SessionExpiredHandler = () => void;
 const sessionExpiredHandlers = new Set<SessionExpiredHandler>();
 
-export const onSessionExpired = (handler: SessionExpiredHandler): (() => void) => {
+export const onSessionExpired = (
+  handler: SessionExpiredHandler,
+): (() => void) => {
   sessionExpiredHandlers.add(handler);
   return () => sessionExpiredHandlers.delete(handler);
 };
@@ -111,7 +81,7 @@ const notifySessionExpired = () => {
     try {
       handler();
     } catch (e) {
-      console.error('[notifySessionExpired] Handler error:', e);
+      console.error("[notifySessionExpired] Handler error:", e);
     }
   });
 };
@@ -124,9 +94,9 @@ export const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 25000, // 25s timeout for mobile networks
   headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    'X-Client-Platform': Platform.OS,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "X-Client-Platform": Platform.OS,
   },
 });
 
@@ -143,7 +113,9 @@ apiClient.interceptors.request.use(
     }
 
     if (__DEV__) {
-      console.log(`[API Request] ${config.method?.toUpperCase()} ${config.baseURL || ''}${config.url}`);
+      console.log(
+        `[API Request] ${config.method?.toUpperCase()} ${config.baseURL || ""}${config.url}`,
+      );
     }
 
     // 1. Inject Authorization header if requiresAuth is not explicitly false
@@ -156,12 +128,12 @@ apiClient.interceptors.request.use(
 
     // 2. Inject Idempotency-Key if provided in config
     if (config.idempotencyKey) {
-      config.headers['Idempotency-Key'] = config.idempotencyKey;
+      config.headers["Idempotency-Key"] = config.idempotencyKey;
     }
 
     return config;
   },
-  (error) => Promise.reject(parseApiError(error))
+  (error) => Promise.reject(parseApiError(error)),
 );
 
 // ---------------------------------------------------------------------------
@@ -173,7 +145,9 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
 
     // Ignore if not a 401 error or request config is missing
     if (!error.response || error.response.status !== 401 || !originalRequest) {
@@ -181,15 +155,15 @@ apiClient.interceptors.response.use(
     }
 
     // Do NOT attempt refresh for public or auth endpoints to avoid infinite loops
-    const requestUrl = originalRequest.url || '';
+    const requestUrl = originalRequest.url || "";
     const isAuthRoute =
-      requestUrl.includes('/auth/login') ||
-      requestUrl.includes('/auth/signup') ||
-      requestUrl.includes('/auth/refresh') ||
-      requestUrl.includes('/auth/forgot-password');
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/signup") ||
+      requestUrl.includes("/auth/refresh") ||
+      requestUrl.includes("/auth/forgot-password");
 
     if (isAuthRoute || originalRequest._retry) {
-      if (requestUrl.includes('/auth/refresh')) {
+      if (requestUrl.includes("/auth/refresh")) {
         // Refresh token itself failed or expired! Force session termination
         await tokenStorage.clearAll();
         notifySessionExpired();
@@ -237,11 +211,14 @@ apiClient.interceptors.response.use(
 
       const data = refreshResponse.data?.data;
       if (!data?.accessToken) {
-        throw new Error('Invalid refresh response payload');
+        throw new Error("Invalid refresh response payload");
       }
 
       // Persist rotated tokens
-      await tokenStorage.setTokens(data.accessToken, data.refreshToken || refreshToken);
+      await tokenStorage.setTokens(
+        data.accessToken,
+        data.refreshToken || refreshToken,
+      );
 
       // Notify and replay queued requests
       processQueue(null, data.accessToken);
@@ -257,5 +234,5 @@ apiClient.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );
