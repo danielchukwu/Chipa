@@ -13,39 +13,36 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppButton } from '@/components/ui/app-button';
-import { AppInput } from '@/components/ui/input/app-input';
-import {
-  PasswordChecklist,
-  isPasswordValid,
-} from '@/components/ui/password-checklist';
+import { PinInput } from '@/components/ui/input/pin-input';
 import { BackArrowIcon } from '@/components/ui/icons/back-arrow-icon';
 import { ChipaLogo } from '@/components/chipa-logo';
 import { authService } from '@/api/services/auth.service';
+import { chipaApi } from '@/lib/api';
 
 export default function ForgotResetScreen() {
   const router = useRouter();
   const { email, otp } = useLocalSearchParams<{ email: string; otp: string }>();
 
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const canContinue =
-    isPasswordValid(password) && confirmPassword.length > 0 && !loading;
+    pin.length === 4 && confirmPin.length === 4 && !loading;
 
-  const handleReset = async () => {
-    if (!isPasswordValid(password)) {
-      setError('Please satisfy all password requirements');
+  const handleResetPin = async () => {
+    if (pin.length < 4) {
+      setError('PIN must be 4 digits');
       return;
     }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    if (confirmPin.length < 4) {
+      setError('Please confirm your 4-digit PIN');
       return;
     }
-    if (!email || !otp) {
-      setError('Invalid reset session. Please start over.');
+    if (pin !== confirmPin) {
+      setError('PINs do not match');
       return;
     }
 
@@ -53,17 +50,21 @@ export default function ForgotResetScreen() {
     setLoading(true);
 
     try {
-      await authService.changePasswordByEmail({ email, otp, password });
+      if (email && otp) {
+        await authService.changePinByEmail({ email, otp, pin });
+      } else {
+        await chipaApi.setTransactionPIN(pin);
+      }
       setSuccess(true);
     } catch (err: any) {
-      setError(err?.message || 'Failed to reset password. Please try again.');
+      setError(err?.message || 'Failed to reset PIN. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleBackToLogin = () => {
-    // Dismiss the entire forgot-password sub-stack and return to login
+    // Dismiss the entire forgot sub-stack and return to login / PIN screen
     if (router.canDismiss()) router.dismissAll();
     router.replace('/(auth)/login' as any);
   };
@@ -77,10 +78,10 @@ export default function ForgotResetScreen() {
             <Text style={{ fontSize: 38 }}>✅</Text>
           </View>
           <Text className="font-satoshi text-[24px] font-extrabold text-gray-900 text-center tracking-[-0.4px]">
-            Password reset!
+            PIN reset complete!
           </Text>
           <Text className="font-sans text-sm text-gray-500 text-center leading-5">
-            Your password has been updated successfully. You can now log in with your new password.
+            Your PIN has been updated successfully. You can now log in with your new PIN.
           </Text>
           <View className="w-full mt-6">
             <AppButton
@@ -132,49 +133,42 @@ export default function ForgotResetScreen() {
 
               {/* Title & Subtitle */}
               <Text className="font-satoshi text-[28px] font-extrabold text-gray-900 leading-[34px] tracking-[-0.6px] mb-2">
-                Set new password
+                Set new PIN
               </Text>
               <Text className="font-sans text-sm text-gray-500 mb-8 leading-5">
-                Your new password must be different from your previous password.
+                Enter a new secure 4-digit PIN for your account.
               </Text>
 
-              {/* New Password */}
-              <View className="gap-5">
-                <AppInput
-                  label="New password"
-                  placeholder="Enter new password"
-                  value={password}
-                  onChangeText={(t) => {
-                    setPassword(t);
+              {/* PIN Inputs */}
+              <View className="w-full items-center">
+                <PinInput
+                  label="New PIN"
+                  value={pin}
+                  onChangePin={(val) => {
+                    setPin(val);
                     if (error) setError('');
                   }}
-                  isPassword
+                  secureTextEntry
                   autoFocus
                 />
 
-                {/* Password requirements checklist */}
-                {password.length > 0 && (
-                  <PasswordChecklist password={password} />
-                )}
-
-                <AppInput
-                  label="Confirm new password"
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChangeText={(t) => {
-                    setConfirmPassword(t);
+                <PinInput
+                  label="Confirm New PIN"
+                  value={confirmPin}
+                  onChangePin={(val) => {
+                    setConfirmPin(val);
                     if (error) setError('');
                   }}
-                  isPassword
+                  secureTextEntry
                   error={error}
                 />
               </View>
 
-              <View className="mt-8">
+              <View className="mt-8 w-full">
                 <AppButton
-                  title="Reset password"
+                  title="Reset PIN"
                   variant="primary"
-                  onPress={handleReset}
+                  onPress={handleResetPin}
                   loading={loading}
                   disabled={!canContinue}
                 />

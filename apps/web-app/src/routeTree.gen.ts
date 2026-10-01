@@ -10,30 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as TermsRouteImport } from './routes/terms'
 import { Route as DemoPosthogRouteImport } from './routes/demo/posthog'
 import { Route as DemoSentryTestingRouteImport } from './routes/demo/sentry.testing'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoPosthogRoute = DemoPosthogRouteImport.update({
@@ -49,61 +31,30 @@ const DemoSentryTestingRoute = DemoSentryTestingRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/privacy': typeof PrivacyRoute
-  '/terms': typeof TermsRoute
   '/demo/posthog': typeof DemoPosthogRoute
   '/demo/sentry/testing': typeof DemoSentryTestingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/privacy': typeof PrivacyRoute
-  '/terms': typeof TermsRoute
   '/demo/posthog': typeof DemoPosthogRoute
   '/demo/sentry/testing': typeof DemoSentryTestingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/privacy': typeof PrivacyRoute
-  '/terms': typeof TermsRoute
   '/demo/posthog': typeof DemoPosthogRoute
   '/demo/sentry/testing': typeof DemoSentryTestingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/about'
-    | '/privacy'
-    | '/terms'
-    | '/demo/posthog'
-    | '/demo/sentry/testing'
+  fullPaths: '/' | '/demo/posthog' | '/demo/sentry/testing'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/about'
-    | '/privacy'
-    | '/terms'
-    | '/demo/posthog'
-    | '/demo/sentry/testing'
-  id:
-    | '__root__'
-    | '/'
-    | '/about'
-    | '/privacy'
-    | '/terms'
-    | '/demo/posthog'
-    | '/demo/sentry/testing'
+  to: '/' | '/demo/posthog' | '/demo/sentry/testing'
+  id: '__root__' | '/' | '/demo/posthog' | '/demo/sentry/testing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
-  PrivacyRoute: typeof PrivacyRoute
-  TermsRoute: typeof TermsRoute
   DemoPosthogRoute: typeof DemoPosthogRoute
   DemoSentryTestingRoute: typeof DemoSentryTestingRoute
 }
@@ -115,27 +66,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/posthog': {
@@ -157,9 +87,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
-  PrivacyRoute: PrivacyRoute,
-  TermsRoute: TermsRoute,
   DemoPosthogRoute: DemoPosthogRoute,
   DemoSentryTestingRoute: DemoSentryTestingRoute,
 }

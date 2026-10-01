@@ -1416,6 +1416,53 @@ func (s *AuthService) ChangePasswordByEmail(ctx context.Context, email, otp, new
 	return nil
 }
 
+// ChangePinByEmail resets a user's 4-digit transaction PIN using their email address and OTP
+func (s *AuthService) ChangePinByEmail(ctx context.Context, email, otp, newPin string) error {
+	email = normalizeEmail(email)
+	if email == "" {
+		return errors.New("email is required")
+	}
+	if len(newPin) != 4 {
+		return errors.New("PIN must be exactly 4 digits")
+	}
+
+	// 1. Verify and consume OTP with brute-force attempt limits
+	if err := s.verifyAndConsumeEmailOTP(ctx, email, otp); err != nil {
+		return err
+	}
+
+	// 2. Resolve fakeID from Redis via email with Postgres fallback
+	exists, publicID := s.usersService.CheckEmail(ctx, email)
+	if !exists || publicID == "" {
+		return errors.New("no account found with that email address")
+	}
+
+	// 3. Hash the new PIN
+	hashedPin, err := bcrypt.GenerateFromPassword([]byte(newPin), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("failed to hash PIN: %w", err)
+	}
+
+	// 4. Update PIN in DB
+	if s.pool != nil {
+		_, err = s.pool.Exec(ctx, `
+			UPDATE users 
+			SET pin_hash = $1,
+			    account_status = CASE WHEN account_status = 'just_registered' THEN 'active' ELSE account_status END,
+			    updated_at = NOW() 
+			WHERE public_id = $2
+		`, string(hashedPin), publicID)
+		if err != nil {
+			return fmt.Errorf("failed to update PIN: %w", err)
+		}
+	}
+
+	// 5. Invalidate cached user info
+	_ = s.usersService.InvalidateCachedUserInfo(ctx, publicID)
+
+	return nil
+}
+
 
 // CheckAndAssignRole checks if a user already has a specific role, and if not, assigns it.
 func (s *AuthService) CheckAndAssignRole(ctx context.Context, userID int64, publicID string, roleCode string, whoAssigned int64) error {

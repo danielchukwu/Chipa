@@ -34,6 +34,7 @@ type AuthService interface {
 	Logout(ctx context.Context, refreshToken string) error
 	GetCountryIDByIso2(ctx context.Context, iso2 string) (int16, error)
 	ChangePasswordByEmail(ctx context.Context, email, otp, newPassword string) error
+	ChangePinByEmail(ctx context.Context, email, otp, newPin string) error
 	GetUserDetailsByFakeID(ctx context.Context, fakeID string) (queries.UserWithPlaces, error)
 }
 
@@ -746,6 +747,46 @@ func (h *Handler) ChangePasswordByEmail(w http.ResponseWriter, r *http.Request) 
 	}
 
 	h.utils.RespondSuccess(w, http.StatusOK, "Password changed successfully", nil)
+}
+
+// ChangePinByEmailRequest represents the structure for resetting PIN using email
+type ChangePinByEmailRequest struct {
+	Email string `json:"email" validate:"required,email"`
+	OTP   string `json:"otp" validate:"required,len=6"`
+	PIN   string `json:"pin" validate:"required,len=4"`
+}
+
+// ChangePinByEmail godoc
+// @Summary Change PIN by email
+// @Description Resets a user's transaction PIN using their email address and OTP
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body ChangePinByEmailRequest true "Email, OTP and new PIN details"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} map[string]interface{}
+// @Failure 500 {object} map[string]interface{}
+// @Router /api/v1/auth/change-pin-by-email [post]
+func (h *Handler) ChangePinByEmail(w http.ResponseWriter, r *http.Request) {
+	var req ChangePinByEmailRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		return
+	}
+
+	if err := h.validate.Struct(req); err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, "Validation failed: "+err.Error())
+		return
+	}
+
+	err := h.authService.ChangePinByEmail(r.Context(), req.Email, req.OTP, req.PIN)
+	if err != nil {
+		h.utils.RespondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	h.utils.RespondSuccess(w, http.StatusOK, "PIN reset successfully", nil)
 }
 
 // AdminLoginRequest represents the simplified payload for admin login

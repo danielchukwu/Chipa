@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Keyboard,
@@ -22,7 +22,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const { email: initialEmail } = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(initialEmail || '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -90,10 +91,10 @@ export default function ForgotPasswordScreen() {
 
               {/* Title & Subtitle */}
               <Text className="font-satoshi text-[28px] font-extrabold text-gray-900 leading-[34px] tracking-[-0.6px] mb-2">
-                Forgot password?
+                Forgot PIN?
               </Text>
               <Text className="font-sans text-sm text-gray-500 mb-8 leading-5">
-                No worries. Enter your registered email address and we'll send you a 6-digit reset code.
+                No worries. Enter your registered email address and we'll send you a 6-digit verification code.
               </Text>
 
               {/* Email Input */}

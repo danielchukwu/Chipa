@@ -126,3 +126,9 @@ export interface ChangePasswordByEmailRequest {
   password: string;
 }
 
+export interface ChangePinByEmailRequest {
+  email: string;
+  otp: string;
+  pin: string;
+}
+

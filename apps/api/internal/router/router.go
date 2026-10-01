@@ -185,6 +185,7 @@ func New(cfg *config.Config, pool *pgxpool.Pool, rdb *redis.Client, distributor 
 	mainRouter.Post(utils.ApiUrls.Auth.Logout, authH.Logout)
 	mainRouter.Post(utils.ApiUrls.Auth.Refresh, authH.Refresh)
 	mainRouter.Post(utils.ApiUrls.Auth.ChangePasswordByEmail, authH.ChangePasswordByEmail)
+	mainRouter.Post(utils.ApiUrls.Auth.ChangePinByEmail, authH.ChangePinByEmail)
 
 	// Flutterwave Webhook
 	mainRouter.Post("/api/v1/webhooks/flutterwave", webhooksH.HandleFlutterwave)

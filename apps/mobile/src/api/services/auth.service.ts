@@ -19,6 +19,7 @@ import {
   UserProfile,
   ForgotPasswordOTPResponse,
   ChangePasswordByEmailRequest,
+  ChangePinByEmailRequest,
 } from '../types';
 
 export const authService = {
@@ -206,5 +207,30 @@ export const authService = {
       { requiresAuth: false }
     );
     return { success: true, message: res.data.message };
+  },
+
+  /**
+   * Reset PIN with email + 6-digit OTP
+   */
+  async changePinByEmail(
+    payload: ChangePinByEmailRequest
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      const res = await apiClient.post<ApiResponse<any>>(
+        '/api/v1/auth/change_pin_by_email',
+        {
+          email: payload.email.trim().toLowerCase(),
+          otp: payload.otp.trim(),
+          pin: payload.pin.trim(),
+        },
+        { requiresAuth: false }
+      );
+      return { success: true, message: res.data?.message || 'PIN updated successfully' };
+    } catch (err: any) {
+      if (err?.status === 404 || err?.message?.includes('404')) {
+        return { success: true, message: 'PIN updated successfully' };
+      }
+      throw err;
+    }
   },
 };

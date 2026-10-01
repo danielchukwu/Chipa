@@ -13,6 +13,7 @@ type AuthURLMap struct {
 	Refresh               string
 	AdminLogin            string
 	ChangePasswordByEmail string
+	ChangePinByEmail      string
 	SuperAdmin            string
 }
 
@@ -58,6 +59,7 @@ var ApiUrls = URLMap{
 		Refresh:               "/api/v1/auth/refresh",
 		AdminLogin:            "/api/v1/auth/admin/login",
 		ChangePasswordByEmail: "/api/v1/auth/change_password_by_email",
+		ChangePinByEmail:      "/api/v1/auth/change_pin_by_email",
 		SuperAdmin:            "/api/v1/auth/superadmin",
 	},
 	Bodies: BodiesURLMap{

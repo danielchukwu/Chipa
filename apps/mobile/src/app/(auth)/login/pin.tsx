@@ -94,7 +94,11 @@ export default function LoginPinScreen() {
               {/* Forgot PIN */}
               <Pressable
                 onPress={() => {
-                  router.push('/(auth)/login/forgot-password' as any);
+                  const userEmail = preAuthData?.email || loginForm.email;
+                  router.push({
+                    pathname: '/(auth)/login/forgot-password' as any,
+                    params: userEmail ? { email: userEmail } : undefined,
+                  });
                 }}
                 hitSlop={10}
                 className="mt-1 mb-8"
